@@ -15,3 +15,5 @@ Thumbs.db
 coverage/
 .vercel/
 out/
+
+.vercel
