@@ -1,54 +1,54 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import { HeroStats } from './HeroStats';
 import { NewsletterForm } from './NewsletterForm';
+
+const SoccerScene = dynamic(
+  () => import('../three/SoccerScene').then((mod) => mod.SoccerScene),
+  {
+    ssr: false,
+    loading: () => <HeroFallback />,
+  }
+);
+
+/* ── CSS smoke fallback shown while Three.js loads ── */
+function HeroFallback() {
+  return (
+    <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 smoke-layer-1" />
+      <div className="absolute inset-0 smoke-layer-2" />
+      <div className="absolute inset-0 smoke-layer-3" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 120% 60% at 50% -10%, rgba(237,26,61,0.25) 0%, rgba(237,26,61,0.08) 40%, transparent 70%)',
+        }}
+      />
+    </div>
+  );
+}
 
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-end overflow-hidden">
-      {/* ── Red Smoke Atmosphere ── */}
+      {/* ── Background layers ── */}
       <div className="absolute inset-0 z-0">
         {/* Base dark */}
         <div className="absolute inset-0 bg-bg" />
 
-        {/* Smoke layers — stacked radial gradients that drift */}
-        <div className="absolute inset-0 smoke-layer-1" />
-        <div className="absolute inset-0 smoke-layer-2" />
-        <div className="absolute inset-0 smoke-layer-3" />
-
-        {/* Top-heavy red wash — like pyro smoke rising */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 120% 60% at 50% -10%, rgba(237,26,61,0.25) 0%, rgba(237,26,61,0.08) 40%, transparent 70%)',
-          }}
-        />
-
-        {/* Hot spot glow — center-left, where the crowd would be */}
-        <div
-          className="absolute inset-0 animate-glow-drift"
-          style={{
-            background: 'radial-gradient(circle 600px at 30% 40%, rgba(237,26,61,0.18) 0%, transparent 70%)',
-          }}
-        />
-
-        {/* Secondary glow — right side ambient */}
-        <div
-          className="absolute inset-0 animate-glow-drift-reverse"
-          style={{
-            background: 'radial-gradient(circle 400px at 75% 55%, rgba(255,77,106,0.08) 0%, transparent 60%)',
-          }}
-        />
+        {/* Three.js scene (replaces CSS smoke) */}
+        <SoccerScene />
 
         {/* Noise / grain texture for grit */}
-        <div className="absolute inset-0 noise-overlay" />
+        <div className="absolute inset-0 z-[2] noise-overlay" />
 
         {/* Scanlines for that broadcast / terrace cam feel */}
-        <div className="absolute inset-0 scanlines" />
+        <div className="absolute inset-0 z-[2] scanlines" />
 
         {/* Bottom fade to content */}
-        <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-60 z-[3] bg-gradient-to-t from-bg via-bg/80 to-transparent" />
       </div>
 
       {/* ── Vertical red stripe — like a scarf or tifo banner ── */}
