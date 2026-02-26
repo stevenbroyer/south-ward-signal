@@ -23,7 +23,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     requestAnimationFrame(raf);
 
     // Expose lenis to GSAP ScrollTrigger
-    (window as Record<string, unknown>).__lenis = lenis;
+    (window as unknown as Record<string, unknown>).__lenis = lenis;
 
     return () => {
       lenis.destroy();

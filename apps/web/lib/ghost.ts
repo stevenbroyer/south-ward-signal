@@ -1,3 +1,4 @@
+// @ts-expect-error — no type declarations available
 import GhostContentAPI from '@tryghost/content-api';
 import type { GhostPost } from '@sws/shared';
 
