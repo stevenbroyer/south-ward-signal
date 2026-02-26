@@ -1,0 +1,66 @@
+name: Match Day Pipeline
+
+on:
+  schedule:
+    # MLS match windows (all times UTC):
+    # Saturday 6-11pm ET = 22:00-03:00 UTC (Sat 10pm, 11pm; Sun midnight+)
+    - cron: "0 23 * * 6"   # Sat 11pm UTC (7pm ET)
+    - cron: "30 1 * * 0"   # Sun 1:30am UTC (Sat 9:30pm ET)
+    - cron: "0 3 * * 0"    # Sun 3am UTC (Sat 11pm ET)
+    # Wednesday 7-11pm ET = 23:00-03:00 UTC
+    - cron: "0 0 * * 4"    # Thu midnight UTC (Wed 8pm ET)
+    - cron: "0 2 * * 4"    # Thu 2am UTC (Wed 10pm ET)
+    - cron: "0 4 * * 4"    # Thu 4am UTC (Wed midnight ET)
+    # Sunday 1-5pm ET = 17:00-21:00 UTC
+    - cron: "0 19 * * 0"   # Sun 7pm UTC (3pm ET)
+    - cron: "0 22 * * 0"   # Sun 10pm UTC (6pm ET)
+  workflow_dispatch:
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  GHOST_URL: ${{ secrets.GHOST_URL }}
+  GHOST_ADMIN_API_KEY: ${{ secrets.GHOST_ADMIN_API_KEY }}
+  GHOST_CONTENT_API_KEY: ${{ secrets.GHOST_CONTENT_API_KEY }}
+  GHOST_NEWSLETTER_ID: ${{ secrets.GHOST_NEWSLETTER_ID }}
+  API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+  API_FOOTBALL_HOST: ${{ secrets.API_FOOTBALL_HOST }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+  TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+  TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+  TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+  TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+  AYRSHARE_API_KEY: ${{ secrets.AYRSHARE_API_KEY }}
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+jobs:
+  match-day:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: packages/viz/requirements.txt
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install -r packages/viz/requirements.txt
+
+      - name: Run match day pipeline
+        run: npx tsx scripts/match-day.ts

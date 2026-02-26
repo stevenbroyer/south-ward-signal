@@ -1,0 +1,237 @@
+/**
+ * South Ward Signal — Data Seeder
+ *
+ * Populates Supabase with current season data from API-Football and ASA.
+ * Run nightly at 3am ET for full sync, or manually for initial setup.
+ *
+ * Tables populated: matches, standings, player_stats
+ */
+
+const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY || "";
+const API_FOOTBALL_HOST = process.env.API_FOOTBALL_HOST || "v3.football.api-sports.io";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL || "";
+
+const MLS_LEAGUE_ID = 253;
+const NYRB_TEAM_ID = 1602;
+const CURRENT_SEASON = 2026;
+const ASA_BASE = "https://app.americansocceranalysis.com/api/v1";
+
+async function fetchJSON(url: string, headers: Record<string, string> = {}) {
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+  return res.json();
+}
+
+async function notify(msg: string, err = false) {
+  console.log(`[${err ? "ERROR" : "INFO"}] ${msg}`);
+  if (DISCORD_WEBHOOK) {
+    try { await fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: `${err ? "🚨" : "🔄"} **Data Seed**: ${msg}` }) }); } catch {}
+  }
+}
+
+async function upsertSupabase(table: string, records: any[], conflictColumn = "id") {
+  if (!records.length) return;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[UPSERT] ${table}: ${res.status} — ${text}`);
+  }
+}
+
+function rateLimit(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// ── Sync matches ────────────────────────────────────────────────────────────
+
+async function syncMatches() {
+  console.log("[MATCHES] Fetching NYRB fixtures...");
+  const headers = { "x-apisports-key": API_FOOTBALL_KEY };
+  const data = await fetchJSON(
+    `https://${API_FOOTBALL_HOST}/fixtures?league=${MLS_LEAGUE_ID}&season=${CURRENT_SEASON}&team=${NYRB_TEAM_ID}`,
+    headers
+  );
+
+  const fixtures = data.response || [];
+  const records = fixtures.map((f: any) => ({
+    id: String(f.fixture.id),
+    date: f.fixture.date,
+    home_team: f.teams.home.name,
+    away_team: f.teams.away.name,
+    home_team_id: String(f.teams.home.id),
+    away_team_id: String(f.teams.away.id),
+    home_score: f.goals.home,
+    away_score: f.goals.away,
+    status: f.fixture.status.short === "FT" ? "finished"
+      : f.fixture.status.short === "NS" ? "scheduled"
+      : f.fixture.status.short === "PST" ? "postponed"
+      : f.fixture.status.short === "LIVE" || f.fixture.status.short === "1H" || f.fixture.status.short === "2H" ? "live"
+      : "scheduled",
+    venue: f.fixture.venue?.name || null,
+    competition: "MLS",
+    season: CURRENT_SEASON,
+    updated_at: new Date().toISOString(),
+  }));
+
+  await upsertSupabase("matches", records);
+  console.log(`[MATCHES] Synced ${records.length} fixtures.`);
+  return records.length;
+}
+
+// ── Sync standings ──────────────────────────────────────────────────────────
+
+async function syncStandings() {
+  console.log("[STANDINGS] Fetching MLS standings...");
+  const headers = { "x-apisports-key": API_FOOTBALL_KEY };
+  const data = await fetchJSON(
+    `https://${API_FOOTBALL_HOST}/standings?league=${MLS_LEAGUE_ID}&season=${CURRENT_SEASON}`,
+    headers
+  );
+
+  const groups = data.response?.[0]?.league?.standings || [];
+  const records: any[] = [];
+
+  for (const group of groups) {
+    for (const team of group) {
+      records.push({
+        id: `${CURRENT_SEASON}-${team.team.id}`,
+        team: team.team.name,
+        team_id: String(team.team.id),
+        position: team.rank,
+        points: team.points,
+        wins: team.all.win,
+        draws: team.all.draw,
+        losses: team.all.lose,
+        goals_for: team.all.goals.for,
+        goals_against: team.all.goals.against,
+        goal_difference: team.goalsDiff,
+        form: (team.form || "").split("").filter((c: string) => "WDL".includes(c)),
+        games_played: team.all.played,
+        season: CURRENT_SEASON,
+        conference: team.group || "Unknown",
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  await upsertSupabase("standings", records);
+  console.log(`[STANDINGS] Synced ${records.length} entries.`);
+  return records.length;
+}
+
+// ── Sync player stats (from ASA) ────────────────────────────────────────────
+
+async function syncPlayerStats() {
+  console.log("[PLAYERS] Fetching player stats from ASA...");
+
+  try {
+    const data = await fetchJSON(
+      `${ASA_BASE}/mls/players/xgoals?season_name=${CURRENT_SEASON}&team_id[]=UKMUVmFs`
+    );
+
+    const players = data || [];
+    const records = players.map((p: any) => ({
+      id: p.player_id || `${p.player_name}-${CURRENT_SEASON}`,
+      name: p.player_name || "Unknown",
+      team: "New York Red Bulls",
+      position: p.general_position || "Unknown",
+      season: CURRENT_SEASON,
+      games_played: p.count_games || 0,
+      minutes: p.minutes_played || 0,
+      goals: p.goals || 0,
+      assists: p.assists || 0,
+      xg: p.xgoals || 0,
+      xa: p.xassists || 0,
+      goals_added: p.goals_added || null,
+      key_passes: p.key_passes || null,
+      pass_completion: p.pass_completion_percentage || null,
+      updated_at: new Date().toISOString(),
+    }));
+
+    await upsertSupabase("player_stats", records);
+    console.log(`[PLAYERS] Synced ${records.length} players.`);
+    return records.length;
+  } catch (err) {
+    console.warn(`[PLAYERS] ASA API unavailable, trying API-Football fallback...`);
+    await rateLimit(2000);
+
+    const headers = { "x-apisports-key": API_FOOTBALL_KEY };
+    const data = await fetchJSON(
+      `https://${API_FOOTBALL_HOST}/players?team=${NYRB_TEAM_ID}&season=${CURRENT_SEASON}&league=${MLS_LEAGUE_ID}`,
+      headers
+    );
+
+    const players = data.response || [];
+    const records = players.map((p: any) => {
+      const stats = p.statistics?.[0] || {};
+      return {
+        id: String(p.player.id),
+        name: p.player.name,
+        team: "New York Red Bulls",
+        position: stats.games?.position || "Unknown",
+        season: CURRENT_SEASON,
+        games_played: stats.games?.appearences || 0,
+        minutes: stats.games?.minutes || 0,
+        goals: stats.goals?.total || 0,
+        assists: stats.goals?.assists || 0,
+        xg: 0,
+        xa: 0,
+        key_passes: stats.passes?.key || null,
+        pass_completion: stats.passes?.accuracy || null,
+        tackles_won: stats.tackles?.total || null,
+        interceptions: stats.tackles?.interceptions || null,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    await upsertSupabase("player_stats", records);
+    console.log(`[PLAYERS] Synced ${records.length} players (API-Football).`);
+    return records.length;
+  }
+}
+
+// ── Main ────────────────────────────────────────────────────────────────────
+
+async function main() {
+  console.log("═══ South Ward Signal — Data Seed ═══\n");
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+    process.exit(1);
+  }
+
+  const results = { matches: 0, standings: 0, players: 0 };
+
+  try {
+    results.matches = await syncMatches();
+    await rateLimit(2000);
+  } catch (err) { console.error("[MATCHES] Error:", err); }
+
+  try {
+    results.standings = await syncStandings();
+    await rateLimit(2000);
+  } catch (err) { console.error("[STANDINGS] Error:", err); }
+
+  try {
+    results.players = await syncPlayerStats();
+  } catch (err) { console.error("[PLAYERS] Error:", err); }
+
+  const summary = `Matches: ${results.matches}, Standings: ${results.standings}, Players: ${results.players}`;
+  console.log(`\n${summary}`);
+  await notify(summary);
+
+  console.log("\n═══ Data seed complete ═══");
+}
+
+main().catch(async (err) => { console.error(err); await notify(`Failed: ${err.message}`, true); process.exit(1); });

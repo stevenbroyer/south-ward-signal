@@ -1,0 +1,37 @@
+{
+  "name": "@sws/engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./agents/*": "./dist/agents/*.js",
+    "./data-sources/*": "./dist/data-sources/*.js",
+    "./templates/*": "./dist/templates/*.js",
+    "./utils/*": "./dist/utils/*.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@sws/shared": "*",
+    "@supabase/supabase-js": "^2.45.0",
+    "@tryghost/admin-api": "^1.13.0",
+    "@tryghost/content-api": "^1.11.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.0",
+    "marked": "^15.0.0",
+    "node-fetch": "^3.3.0",
+    "p-queue": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

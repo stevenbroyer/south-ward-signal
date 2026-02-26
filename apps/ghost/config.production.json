@@ -1,0 +1,46 @@
+{
+  "url": "https://southwardsignal.com",
+  "server": {
+    "port": 2368,
+    "host": "0.0.0.0"
+  },
+  "database": {
+    "client": "mysql",
+    "connection": {
+      "host": "db",
+      "port": 3306,
+      "user": "ghost",
+      "password": "CHANGE_ME",
+      "database": "ghost"
+    }
+  },
+  "mail": {
+    "transport": "SMTP",
+    "from": "South Ward Signal <noreply@southwardsignal.com>",
+    "options": {
+      "host": "smtp.mailgun.org",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "CHANGE_ME",
+        "pass": "CHANGE_ME"
+      }
+    }
+  },
+  "logging": {
+    "transports": ["stdout"],
+    "level": "info"
+  },
+  "process": "systemd",
+  "paths": {
+    "contentPath": "/var/lib/ghost/content"
+  },
+  "privacy": {
+    "useTinfoil": true
+  },
+  "compress": true,
+  "imageOptimization": {
+    "resize": true,
+    "srcsets": true
+  }
+}
