@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { sourceSans, jetbrainsMono } from '@/lib/fonts';
 import { SmoothScroll } from '@/components/layout/SmoothScroll';
 import { Navbar } from '@/components/layout/Navbar';
@@ -39,7 +40,11 @@ export const viewport: Viewport = {
   themeColor: '#0A0A0C',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const pathname = headersList.get('x-next-url') ?? '';
+  const isAdmin = pathname.startsWith('/admin');
+
   return (
     <html
       lang="en"
@@ -56,14 +61,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-bg text-sws-white font-body antialiased">
-        <SmoothScroll>
-          <CustomCursor />
-          <Navbar />
-          <PageTransition>
-            <main className="min-h-screen">{children}</main>
-          </PageTransition>
-          <Footer />
-        </SmoothScroll>
+        {isAdmin ? (
+          <main className="min-h-screen">{children}</main>
+        ) : (
+          <SmoothScroll>
+            <CustomCursor />
+            <Navbar />
+            <PageTransition>
+              <main className="min-h-screen">{children}</main>
+            </PageTransition>
+            <Footer />
+          </SmoothScroll>
+        )}
       </body>
     </html>
   );
