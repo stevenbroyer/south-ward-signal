@@ -163,6 +163,26 @@ async function syncPlayerStats() {
     const data = await fetchJSON(
       `${ASA_BASE}/mls/players/xgoals?season_name=${CURRENT_SEASON}&team_id=a2lqRX2Mr0`
     );
+    await rateLimit(1000);
+
+    // Fetch Goals Added breakdown for each player
+    const gaMap = new Map<string, number>();
+    try {
+      const gaData: any[] = await fetchJSON(
+        `${ASA_BASE}/mls/players/goals-added?season_name=${CURRENT_SEASON}&team_id=a2lqRX2Mr0`
+      );
+      for (const p of gaData) {
+        let total = 0;
+        for (const d of p.data || []) {
+          total += d.goals_added_above_avg || 0;
+        }
+        gaMap.set(p.player_id, total);
+      }
+      console.log(`[PLAYERS] Goals Added: ${gaMap.size} players.`);
+    } catch {
+      console.log("[PLAYERS] Goals Added unavailable.");
+    }
+    await rateLimit(1000);
 
     const players = data || [];
     const records = players.map((p: any) => {
@@ -179,7 +199,7 @@ async function syncPlayerStats() {
         assists: p.primary_assists || 0,
         xg: p.xgoals || 0,
         xa: p.xassists || 0,
-        goals_added: p.goals_added || null,
+        goals_added: gaMap.get(p.player_id) ?? null,
         key_passes: p.key_passes || null,
         pass_completion: p.pass_completion_percentage || null,
         updated_at: new Date().toISOString(),

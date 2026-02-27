@@ -119,7 +119,7 @@ export async function getTopPerformers(season = 2025, limit = 3) {
       .from('player_stats')
       .select('name, position, goals, assists, xg, goals_added, minutes, games_played')
       .eq('team', NYRB).eq('season', season)
-      .order('goals_added', { ascending: false, nullsFirst: false }).limit(limit);
+      .order('goals', { ascending: false }).order('xg', { ascending: false }).limit(limit);
     return data || [];
   }, []);
 }
@@ -192,7 +192,7 @@ export async function getPlayerList(season = 2025, filters?: { position?: string
   return safeQuery(async () => {
     let query = supabase.from('player_stats').select('*').eq('team', NYRB).eq('season', season);
     if (filters?.position && filters.position !== 'all') query = query.eq('position', filters.position);
-    query = query.order(filters?.sort || 'goals_added', { ascending: false, nullsFirst: false });
+    query = query.order(filters?.sort || 'minutes', { ascending: false });
     const { data } = await query;
     return data || [];
   }, []);
