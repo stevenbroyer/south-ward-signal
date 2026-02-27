@@ -16,7 +16,8 @@ const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL || "";
 
 const MLS_LEAGUE_ID = 253;
 const NYRB_TEAM_ID = 1602;
-const CURRENT_SEASON = 2026;
+const API_FOOTBALL_SEASON = 2024;  // Free tier limit: 2022-2024
+const CURRENT_SEASON = 2025;       // MLS 2025 season (completed, full ASA data)
 const ASA_BASE = "https://app.americansocceranalysis.com/api/v1";
 
 async function fetchJSON(url: string, headers: Record<string, string> = {}) {
@@ -60,7 +61,7 @@ async function syncMatches() {
   console.log("[MATCHES] Fetching NYRB fixtures...");
   const headers = { "x-apisports-key": API_FOOTBALL_KEY };
   const data = await fetchJSON(
-    `https://${API_FOOTBALL_HOST}/fixtures?league=${MLS_LEAGUE_ID}&season=${CURRENT_SEASON}&team=${NYRB_TEAM_ID}`,
+    `https://${API_FOOTBALL_HOST}/fixtures?league=${MLS_LEAGUE_ID}&season=${API_FOOTBALL_SEASON}&team=${NYRB_TEAM_ID}`,
     headers
   );
 
@@ -77,11 +78,12 @@ async function syncMatches() {
     status: f.fixture.status.short === "FT" ? "finished"
       : f.fixture.status.short === "NS" ? "scheduled"
       : f.fixture.status.short === "PST" ? "postponed"
+      : f.fixture.status.short === "CANC" ? "cancelled"
       : f.fixture.status.short === "LIVE" || f.fixture.status.short === "1H" || f.fixture.status.short === "2H" ? "live"
       : "scheduled",
     venue: f.fixture.venue?.name || null,
     competition: "MLS",
-    season: CURRENT_SEASON,
+    season: API_FOOTBALL_SEASON,
     updated_at: new Date().toISOString(),
   }));
 
@@ -96,7 +98,7 @@ async function syncStandings() {
   console.log("[STANDINGS] Fetching MLS standings...");
   const headers = { "x-apisports-key": API_FOOTBALL_KEY };
   const data = await fetchJSON(
-    `https://${API_FOOTBALL_HOST}/standings?league=${MLS_LEAGUE_ID}&season=${CURRENT_SEASON}`,
+    `https://${API_FOOTBALL_HOST}/standings?league=${MLS_LEAGUE_ID}&season=${API_FOOTBALL_SEASON}`,
     headers
   );
 
@@ -106,7 +108,7 @@ async function syncStandings() {
   for (const group of groups) {
     for (const team of group) {
       records.push({
-        id: `${CURRENT_SEASON}-${team.team.id}`,
+        id: `${API_FOOTBALL_SEASON}-${team.team.id}`,
         team: team.team.name,
         team_id: String(team.team.id),
         position: team.rank,
@@ -119,7 +121,7 @@ async function syncStandings() {
         goal_difference: team.goalsDiff,
         form: (team.form || "").split("").filter((c: string) => "WDL".includes(c)),
         games_played: team.all.played,
-        season: CURRENT_SEASON,
+        season: API_FOOTBALL_SEASON,
         conference: team.group || "Unknown",
         updated_at: new Date().toISOString(),
       });

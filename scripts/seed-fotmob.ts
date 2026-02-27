@@ -13,7 +13,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const FOTMOB_BASE = 'https://www.fotmob.com/api';
 
 const NYRB_FOTMOB_ID = 7293;
-const CURRENT_SEASON = 2026;
+const MATCH_SEASON = 2024;  // Season of matches in DB (from API-Football free tier)
 
 async function fetchJSON(url: string, headers: Record<string, string> = {}) {
   const res = await fetch(url, {
@@ -133,7 +133,7 @@ async function main() {
   // Get finished matches without fotmob_id
   const matches = await querySupabase(
     'matches',
-    `status=eq.finished&season=eq.${CURRENT_SEASON}&fotmob_id=is.null&or=(home_team.eq.New York Red Bulls,away_team.eq.New York Red Bulls)&order=date.desc`
+    `status=eq.finished&season=eq.${MATCH_SEASON}&fotmob_id=is.null&or=(home_team.eq.New York Red Bulls,away_team.eq.New York Red Bulls)&order=date.desc`
   );
 
   console.log(`Found ${matches.length} matches without FotMob data.\n`);
