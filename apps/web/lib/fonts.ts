@@ -1,11 +1,10 @@
-import localFont from 'next/font/local';
-import { Source_Sans_3, JetBrains_Mono } from 'next/font/google';
+import { Fraunces, Source_Sans_3, JetBrains_Mono } from 'next/font/google';
 
-export const fraunces = localFont({
-  src: '../public/fonts/Fraunces-Variable.woff2',
+export const fraunces = Fraunces({
+  subsets: ['latin'],
   variable: '--font-fraunces',
   display: 'swap',
-  fallback: ['Georgia', 'serif'],
+  weight: ['400', '700', '900'],
 });
 
 export const sourceSans = Source_Sans_3({

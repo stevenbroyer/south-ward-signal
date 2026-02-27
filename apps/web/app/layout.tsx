@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
-import { sourceSans, jetbrainsMono } from '@/lib/fonts';
+import { fraunces, sourceSans, jetbrainsMono } from '@/lib/fonts';
 import { SmoothScroll } from '@/components/layout/SmoothScroll';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -48,18 +48,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
-      className={`${sourceSans.variable} ${jetbrainsMono.variable}`}
+      className={`${fraunces.variable} ${sourceSans.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        {/* Fraunces from Google Fonts as preconnect — local font as primary, CDN fallback */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+      <head />
       <body className="bg-bg text-sws-white font-body antialiased">
         {isAdmin ? (
           <main className="min-h-screen">{children}</main>

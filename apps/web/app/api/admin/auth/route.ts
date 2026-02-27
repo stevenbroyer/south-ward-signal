@@ -40,8 +40,10 @@ export async function POST(request: NextRequest) {
     response.cookies.set('sb-refresh-token', data.session.refresh_token, cookieOptions);
 
     return response;
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    console.error('Auth error:', err);
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

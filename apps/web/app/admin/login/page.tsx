@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,13 +23,14 @@ export default function AdminLoginPage() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || 'Login failed');
+        setLoading(false);
         return;
       }
 
-      router.push('/admin');
+      // Full page reload so the admin layout re-mounts and picks up session cookies
+      window.location.href = '/admin';
     } catch {
       setError('Network error — please try again');
-    } finally {
       setLoading(false);
     }
   }
@@ -63,6 +62,7 @@ export default function AdminLoginPage() {
             <input
               id="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -79,6 +79,7 @@ export default function AdminLoginPage() {
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
