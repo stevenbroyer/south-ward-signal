@@ -44,16 +44,20 @@ export async function getOverviewMetrics(season = 2025): Promise<OverviewMetrics
     ]);
     const s = standingRes.data;
     const ts = teamStatsRes.data;
+    const gp = s?.games_played ?? ts?.games_played ?? 0;
+    const pts = s?.points ?? (ts?.points ? Number(ts.points) : 0);
+    const gf = s?.goals_for ?? (ts?.goals_for ? Number(ts.goals_for) : 0);
+    const ga = s?.goals_against ?? (ts?.goals_against ? Number(ts.goals_against) : 0);
     return {
-      points: s?.points ?? 0,
-      ppg: s?.ppg ? Number(s.ppg) : 0,
-      xgDiff: ts ? Number(ts.xg_for) - Number(ts.xg_against) : 0,
+      points: pts,
+      ppg: gp > 0 ? +(pts / gp).toFixed(2) : 0,
+      xgDiff: ts ? +(Number(ts.xg_for) - Number(ts.xg_against)).toFixed(2) : 0,
       goalsAdded: ts?.goals_added ? Number(ts.goals_added) : 0,
       form: (s?.form || []) as string[],
       confRank: s?.position ?? 0,
-      gamesPlayed: s?.games_played ?? 0,
-      goalsFor: s?.goals_for ?? 0,
-      goalsAgainst: s?.goals_against ?? 0,
+      gamesPlayed: gp,
+      goalsFor: gf,
+      goalsAgainst: ga,
       xgFor: ts ? Number(ts.xg_for) : 0,
       xgAgainst: ts ? Number(ts.xg_against) : 0,
     };
@@ -115,7 +119,7 @@ export async function getTopPerformers(season = 2025, limit = 3) {
       .from('player_stats')
       .select('name, position, goals, assists, xg, goals_added, minutes, games_played')
       .eq('team', NYRB).eq('season', season)
-      .order('goals_added', { ascending: false }).limit(limit);
+      .order('goals_added', { ascending: false, nullsFirst: false }).limit(limit);
     return data || [];
   }, []);
 }
@@ -188,7 +192,7 @@ export async function getPlayerList(season = 2025, filters?: { position?: string
   return safeQuery(async () => {
     let query = supabase.from('player_stats').select('*').eq('team', NYRB).eq('season', season);
     if (filters?.position && filters.position !== 'all') query = query.eq('position', filters.position);
-    query = query.order(filters?.sort || 'goals_added', { ascending: false });
+    query = query.order(filters?.sort || 'goals_added', { ascending: false, nullsFirst: false });
     const { data } = await query;
     return data || [];
   }, []);
