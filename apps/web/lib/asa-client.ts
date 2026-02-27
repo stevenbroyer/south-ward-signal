@@ -5,7 +5,7 @@
  */
 
 const ASA_BASE = 'https://app.americansocceranalysis.com/api/v1';
-const NYRB_ASA_ID = 'UKMUVmFs'; // ASA team ID for NYRB
+const NYRB_ASA_ID = 'a2lqRX2Mr0'; // ASA team ID for NYRB
 
 async function fetchASA<T>(path: string): Promise<T> {
   const res = await fetch(`${ASA_BASE}${path}`, {
@@ -133,15 +133,15 @@ export interface ASATeamXPass {
 // ── API Functions ────────────────────────────────────────────────
 
 export async function getPlayerXGoals(season: number, teamId = NYRB_ASA_ID): Promise<ASAPlayerXG[]> {
-  return fetchASA(`/mls/players/xgoals?season_name=${season}&team_id[]=${teamId}`);
+  return fetchASA(`/mls/players/xgoals?season_name=${season}&team_id=${teamId}`);
 }
 
 export async function getPlayerGoalsAdded(season: number, teamId = NYRB_ASA_ID): Promise<ASAPlayerGA[]> {
-  return fetchASA(`/mls/players/goals-added?season_name=${season}&team_id[]=${teamId}`);
+  return fetchASA(`/mls/players/goals-added?season_name=${season}&team_id=${teamId}`);
 }
 
 export async function getPlayerXPass(season: number, teamId = NYRB_ASA_ID): Promise<ASAXPass[]> {
-  return fetchASA(`/mls/players/xpass?season_name=${season}&team_id[]=${teamId}`);
+  return fetchASA(`/mls/players/xpass?season_name=${season}&team_id=${teamId}`);
 }
 
 export async function getPlayerSalaries(season: number, teamId = NYRB_ASA_ID): Promise<ASAPlayerSalary[]> {
@@ -153,7 +153,7 @@ export async function getTeamXGoals(season: number): Promise<ASATeamXG[]> {
 }
 
 export async function getTeamGoalsAdded(season: number, teamId = NYRB_ASA_ID): Promise<ASATeamGA[]> {
-  return fetchASA(`/mls/teams/goals-added?season_name=${season}&team_id[]=${teamId}`);
+  return fetchASA(`/mls/teams/goals-added?season_name=${season}&team_id=${teamId}`);
 }
 
 export async function getTeamXPass(season: number): Promise<ASATeamXPass[]> {
@@ -161,7 +161,7 @@ export async function getTeamXPass(season: number): Promise<ASATeamXPass[]> {
 }
 
 export async function getGameXGoals(season: number, teamId = NYRB_ASA_ID): Promise<ASAGameXG[]> {
-  return fetchASA(`/mls/games/xgoals?season_name=${season}&team_id[]=${teamId}`);
+  return fetchASA(`/mls/games/xgoals?season_name=${season}&team_id=${teamId}`);
 }
 
 export async function getAllTeamXGoals(season: number): Promise<ASATeamXG[]> {

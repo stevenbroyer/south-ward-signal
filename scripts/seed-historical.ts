@@ -10,7 +10,7 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ASA_BASE = 'https://app.americansocceranalysis.com/api/v1';
-const NYRB_ASA_ID = 'UKMUVmFs';
+const NYRB_ASA_ID = 'a2lqRX2Mr0';
 
 const SEASONS = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
@@ -65,7 +65,7 @@ async function seedTeamSeasonStats() {
       let gaTotal = null;
       try {
         const gaData: any[] = await fetchJSON(
-          `${ASA_BASE}/mls/teams/goals-added?season_name=${season}&team_id[]=${NYRB_ASA_ID}`
+          `${ASA_BASE}/mls/teams/goals-added?season_name=${season}&team_id=${NYRB_ASA_ID}`
         );
         if (gaData?.[0]?.data) {
           gaTotal = gaData[0].data.reduce(
@@ -82,7 +82,7 @@ async function seedTeamSeasonStats() {
       let xpass = null;
       try {
         const xpassData: any[] = await fetchJSON(
-          `${ASA_BASE}/mls/teams/xpass?season_name=${season}&team_id[]=${NYRB_ASA_ID}`
+          `${ASA_BASE}/mls/teams/xpass?season_name=${season}&team_id=${NYRB_ASA_ID}`
         );
         if (xpassData?.[0]) {
           xpass = xpassData[0].passes_completed_over_expected_for || null;
@@ -146,7 +146,7 @@ async function seedPlayerSeasonHistory() {
     console.log(`  [${season}] Fetching player xG...`);
     try {
       const players: any[] = await fetchJSON(
-        `${ASA_BASE}/mls/players/xgoals?season_name=${season}&team_id[]=${NYRB_ASA_ID}`
+        `${ASA_BASE}/mls/players/xgoals?season_name=${season}&team_id=${NYRB_ASA_ID}`
       );
       await delay(1000);
 
@@ -154,7 +154,7 @@ async function seedPlayerSeasonHistory() {
       let gaMap = new Map<string, any>();
       try {
         const gaPlayers: any[] = await fetchJSON(
-          `${ASA_BASE}/mls/players/goals-added?season_name=${season}&team_id[]=${NYRB_ASA_ID}`
+          `${ASA_BASE}/mls/players/goals-added?season_name=${season}&team_id=${NYRB_ASA_ID}`
         );
         for (const p of gaPlayers) {
           const breakdown: Record<string, number> = {};

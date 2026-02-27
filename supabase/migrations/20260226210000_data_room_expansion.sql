@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_fotmob_id ON matches (fotmob_id);
 -- ─── Match Shots ──────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS match_shots (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     team            TEXT NOT NULL,
     player          TEXT NOT NULL,
@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_match_shots_player ON match_shots (player);
 -- ─── Match xG Flow ────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS match_xg_flow (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     minute          INTEGER NOT NULL,
     home_xg         NUMERIC(5,3) DEFAULT 0,
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_match_xg_flow_match ON match_xg_flow (match_id);
 -- ─── Player Match Stats ──────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS player_match_stats (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     player_name     TEXT NOT NULL,
     team            TEXT NOT NULL,
@@ -153,7 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_player_season_history_season ON player_season_his
 -- ─── Team Match Advanced ─────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS team_match_advanced (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     team            TEXT NOT NULL,
     season          INTEGER NOT NULL DEFAULT 2026,

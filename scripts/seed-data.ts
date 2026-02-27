@@ -138,7 +138,7 @@ async function syncPlayerStats() {
 
   try {
     const data = await fetchJSON(
-      `${ASA_BASE}/mls/players/xgoals?season_name=${CURRENT_SEASON}&team_id[]=UKMUVmFs`
+      `${ASA_BASE}/mls/players/xgoals?season_name=${CURRENT_SEASON}&team_id=a2lqRX2Mr0`
     );
 
     const players = data || [];
@@ -204,30 +204,36 @@ async function syncPlayerStats() {
 
 // ── Sync team match advanced (per-match NYRB stats for trend charts) ────────
 
-const NYRB_ASA_ID = "UKMUVmFs";
+const NYRB_ASA_ID = "a2lqRX2Mr0";
 
 async function syncTeamMatchAdvanced() {
   console.log("[ADVANCED] Fetching per-game xG from ASA...");
 
   try {
+    // Fetch team name lookup
+    const teams: any[] = await fetchJSON(`${ASA_BASE}/mls/teams`);
+    const teamNameMap = new Map<string, string>();
+    for (const t of teams) teamNameMap.set(t.team_id, t.team_name);
+
     const games: any[] = await fetchJSON(
-      `${ASA_BASE}/mls/games/xgoals?season_name=${CURRENT_SEASON}&team_id[]=${NYRB_ASA_ID}`
+      `${ASA_BASE}/mls/games/xgoals?season_name=${CURRENT_SEASON}&team_id=${NYRB_ASA_ID}`
     );
 
     const records = games.map((g: any) => {
       const isHome = g.home_team_id === NYRB_ASA_ID;
-      const opponent = isHome ? g.away_team_name : g.home_team_name;
+      const opponentId = isHome ? g.away_team_id : g.home_team_id;
+      const opponent = teamNameMap.get(opponentId) || opponentId;
       const gf = isHome ? g.home_goals : g.away_goals;
       const ga = isHome ? g.away_goals : g.home_goals;
-      const xgf = isHome ? g.home_xgoals : g.away_xgoals;
-      const xga = isHome ? g.away_xgoals : g.home_xgoals;
+      const xgf = isHome ? g.home_team_xgoals : g.away_team_xgoals;
+      const xga = isHome ? g.away_team_xgoals : g.home_team_xgoals;
       const result = gf > ga ? "W" : gf < ga ? "L" : "D";
 
       return {
         match_id: g.game_id,
         team: "New York Red Bulls",
         season: CURRENT_SEASON,
-        match_date: g.date_time_utc?.split("T")[0] || new Date().toISOString().split("T")[0],
+        match_date: (g.date_time_utc || "").substring(0, 10) || new Date().toISOString().split("T")[0],
         opponent,
         is_home: isHome,
         result,
