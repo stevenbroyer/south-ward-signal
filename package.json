@@ -19,14 +19,15 @@
     "seed-data": "tsx scripts/seed-data.ts",
     "seed-historical": "tsx scripts/seed-historical.ts",
     "seed-fotmob": "tsx scripts/seed-fotmob.ts",
+    "seed-sofascore": "tsx scripts/seed-sofascore.ts",
     "setup-ghost": "tsx scripts/setup-ghost.ts",
     "generate-viz": "bash scripts/generate-vizzes.sh"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.0"
   },
   "engines": {
     "node": ">=20.0.0"
