@@ -307,13 +307,19 @@ async function syncTeamSeasonStats() {
   console.log("[TEAM-STATS] Fetching current season team xG from ASA...");
 
   try {
+    // Fetch team name lookup (xgoals doesn't return team_name)
+    const teams: any[] = await fetchJSON(`${ASA_BASE}/mls/teams`);
+    const teamNameMap = new Map<string, string>();
+    for (const t of teams) teamNameMap.set(t.team_id, t.team_name);
+    await rateLimit(500);
+
     const data: any[] = await fetchJSON(
       `${ASA_BASE}/mls/teams/xgoals?season_name=${CURRENT_SEASON}`
     );
 
     const records = data.map((t: any) => ({
       id: `${t.team_id}-${CURRENT_SEASON}`,
-      team: t.team_name || t.team_id,
+      team: teamNameMap.get(t.team_id) || t.team_name || t.team_id,
       team_id: t.team_id,
       season: CURRENT_SEASON,
       games_played: t.count_games || 0,
