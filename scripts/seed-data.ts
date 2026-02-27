@@ -4,7 +4,8 @@
  * Populates Supabase with current season data from API-Football and ASA.
  * Run nightly at 3am ET for full sync, or manually for initial setup.
  *
- * Tables populated: matches, standings, player_stats
+ * Tables populated: matches, standings, player_stats,
+ *                   team_match_advanced, team_season_stats
  */
 
 const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY || "";
@@ -201,6 +202,86 @@ async function syncPlayerStats() {
   }
 }
 
+// ── Sync team match advanced (per-match NYRB stats for trend charts) ────────
+
+const NYRB_ASA_ID = "UKMUVmFs";
+
+async function syncTeamMatchAdvanced() {
+  console.log("[ADVANCED] Fetching per-game xG from ASA...");
+
+  try {
+    const games: any[] = await fetchJSON(
+      `${ASA_BASE}/mls/games/xgoals?season_name=${CURRENT_SEASON}&team_id[]=${NYRB_ASA_ID}`
+    );
+
+    const records = games.map((g: any) => {
+      const isHome = g.home_team_id === NYRB_ASA_ID;
+      const opponent = isHome ? g.away_team_name : g.home_team_name;
+      const gf = isHome ? g.home_goals : g.away_goals;
+      const ga = isHome ? g.away_goals : g.home_goals;
+      const xgf = isHome ? g.home_xgoals : g.away_xgoals;
+      const xga = isHome ? g.away_xgoals : g.home_xgoals;
+      const result = gf > ga ? "W" : gf < ga ? "L" : "D";
+
+      return {
+        match_id: g.game_id,
+        team: "New York Red Bulls",
+        season: CURRENT_SEASON,
+        match_date: g.date_time_utc?.split("T")[0] || new Date().toISOString().split("T")[0],
+        opponent,
+        is_home: isHome,
+        result,
+        goals_for: gf || 0,
+        goals_against: ga || 0,
+        xg_for: xgf || 0,
+        xg_against: xga || 0,
+        clean_sheet: (ga || 0) === 0,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    await upsertSupabase("team_match_advanced", records);
+    console.log(`[ADVANCED] Synced ${records.length} match records.`);
+    return records.length;
+  } catch (err: any) {
+    console.warn(`[ADVANCED] ASA game-level data unavailable: ${err.message}`);
+    return 0;
+  }
+}
+
+// ── Sync team season stats (current season) ─────────────────────────────────
+
+async function syncTeamSeasonStats() {
+  console.log("[TEAM-STATS] Fetching current season team xG from ASA...");
+
+  try {
+    const data: any[] = await fetchJSON(
+      `${ASA_BASE}/mls/teams/xgoals?season_name=${CURRENT_SEASON}`
+    );
+
+    const records = data.map((t: any) => ({
+      id: `${t.team_id}-${CURRENT_SEASON}`,
+      team: t.team_name || t.team_id,
+      team_id: t.team_id,
+      season: CURRENT_SEASON,
+      games_played: t.count_games || 0,
+      goals_for: t.goals_for || 0,
+      goals_against: t.goals_against || 0,
+      xg_for: t.xgoals_for || 0,
+      xg_against: t.xgoals_against || 0,
+      points: t.points || 0,
+      updated_at: new Date().toISOString(),
+    }));
+
+    await upsertSupabase("team_season_stats", records);
+    console.log(`[TEAM-STATS] Synced ${records.length} teams.`);
+    return records.length;
+  } catch (err: any) {
+    console.warn(`[TEAM-STATS] ASA team stats unavailable: ${err.message}`);
+    return 0;
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -211,7 +292,7 @@ async function main() {
     process.exit(1);
   }
 
-  const results = { matches: 0, standings: 0, players: 0 };
+  const results = { matches: 0, standings: 0, players: 0, advanced: 0, teamStats: 0 };
 
   try {
     results.matches = await syncMatches();
@@ -225,9 +306,19 @@ async function main() {
 
   try {
     results.players = await syncPlayerStats();
+    await rateLimit(2000);
   } catch (err) { console.error("[PLAYERS] Error:", err); }
 
-  const summary = `Matches: ${results.matches}, Standings: ${results.standings}, Players: ${results.players}`;
+  try {
+    results.advanced = await syncTeamMatchAdvanced();
+    await rateLimit(2000);
+  } catch (err) { console.error("[ADVANCED] Error:", err); }
+
+  try {
+    results.teamStats = await syncTeamSeasonStats();
+  } catch (err) { console.error("[TEAM-STATS] Error:", err); }
+
+  const summary = `Matches: ${results.matches}, Standings: ${results.standings}, Players: ${results.players}, Advanced: ${results.advanced}, TeamStats: ${results.teamStats}`;
   console.log(`\n${summary}`);
   await notify(summary);
 

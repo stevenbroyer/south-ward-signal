@@ -17,6 +17,8 @@
     "weekly-roundup": "tsx scripts/weekly-roundup.ts",
     "social-queue": "tsx scripts/social-scheduler.ts",
     "seed-data": "tsx scripts/seed-data.ts",
+    "seed-historical": "tsx scripts/seed-historical.ts",
+    "seed-fotmob": "tsx scripts/seed-fotmob.ts",
     "setup-ghost": "tsx scripts/setup-ghost.ts",
     "generate-viz": "bash scripts/generate-vizzes.sh"
   },

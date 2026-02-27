@@ -1,16 +1,36 @@
-import { getLatestMatch, getStandings, getTeamSeasonMetrics } from '@/lib/supabase';
-import DataRoomClient from './DataRoomClient';
+import { Suspense } from 'react';
+import { getTeamSeasonMetrics, getLatestMatch, getStandings } from '@/lib/supabase';
+import {
+  getOverviewMetrics,
+  getSeasonXgRace,
+  getFormStreak,
+  getPointsTrajectory,
+  getTopPerformers,
+} from '@/lib/data-room-queries';
+import { OverviewClient } from './OverviewClient';
 
 export const revalidate = 60;
 
-export default async function DataRoomPage() {
-  const [metrics, latestMatch, standingsData] = await Promise.all([
-    getTeamSeasonMetrics('New York Red Bulls'),
-    getLatestMatch(),
-    getStandings('Eastern'),
-  ]);
+export default async function DataRoomOverview({
+  searchParams,
+}: {
+  searchParams: Promise<{ season?: string }>;
+}) {
+  const params = await searchParams;
+  const season = Number(params?.season) || 2026;
 
-  // Normalize match for client component
+  const [metrics, legacyMetrics, latestMatch, standingsData, xgRace, formStreak, trajectory, topPerformers] =
+    await Promise.all([
+      getOverviewMetrics(season),
+      getTeamSeasonMetrics('New York Red Bulls'),
+      getLatestMatch(),
+      getStandings('Eastern'),
+      getSeasonXgRace(season),
+      getFormStreak(season, 10),
+      getPointsTrajectory(season),
+      getTopPerformers(season, 3),
+    ]);
+
   const match = latestMatch
     ? {
         homeTeam: latestMatch.home_team,
@@ -34,8 +54,7 @@ export default async function DataRoomPage() {
       }
     : null;
 
-  // Normalize standings for StandingsTable shape
-  const standings = (standingsData || []).map((s) => ({
+  const standings = (standingsData || []).slice(0, 6).map((s) => ({
     pos: s.position,
     team: s.team,
     played: s.games_played,
@@ -47,5 +66,16 @@ export default async function DataRoomPage() {
     form: (s.form || []) as ('W' | 'D' | 'L')[],
   }));
 
-  return <DataRoomClient metrics={metrics} match={match} standings={standings} />;
+  return (
+    <OverviewClient
+      metrics={metrics}
+      legacyMetrics={legacyMetrics}
+      match={match}
+      standings={standings}
+      xgRace={xgRace}
+      formStreak={formStreak}
+      trajectory={trajectory}
+      topPerformers={topPerformers}
+    />
+  );
 }
