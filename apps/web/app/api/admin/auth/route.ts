@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSessionToken } from '@/lib/session';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@southwardsignal.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin';
 
-/** POST — Login with email/password, set session cookies */
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+};
+
+/** POST — Login with email/password */
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
@@ -13,31 +21,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error || !data.session) {
-      return NextResponse.json({ error: error?.message ?? 'Invalid credentials' }, { status: 401 });
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    const token = createSessionToken(email);
+
     const response = NextResponse.json({
-      user: { id: data.user.id, email: data.user.email },
+      user: { id: 'admin', email },
     });
 
-    // Set HTTP-only cookies for middleware/API route verification
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    };
-
-    response.cookies.set('sb-access-token', data.session.access_token, cookieOptions);
-    response.cookies.set('sb-refresh-token', data.session.refresh_token, cookieOptions);
+    response.cookies.set('sb-access-token', token, COOKIE_OPTIONS);
 
     return response;
   } catch (err) {
@@ -47,20 +41,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** DELETE — Logout, clear session cookies */
+/** DELETE — Logout, clear session cookie */
 export async function DELETE() {
   const response = NextResponse.json({ success: true });
-
-  const clearOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-    maxAge: 0,
-  };
-
-  response.cookies.set('sb-access-token', '', clearOptions);
-  response.cookies.set('sb-refresh-token', '', clearOptions);
-
+  response.cookies.set('sb-access-token', '', { ...COOKIE_OPTIONS, maxAge: 0 });
   return response;
 }
