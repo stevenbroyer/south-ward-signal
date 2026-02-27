@@ -17,7 +17,7 @@ export default async function DataRoomOverview({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
 
   const [metrics, legacyMetrics, latestMatch, standingsData, xgRace, formStreak, trajectory, topPerformers] =
     await Promise.all([

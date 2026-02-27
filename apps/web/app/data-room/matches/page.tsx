@@ -9,7 +9,7 @@ export default async function MatchesPage({
   searchParams: Promise<{ season?: string; result?: string; home?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
   const filters = {
     result: params?.result || undefined,
     home: params?.home === 'true' ? true : params?.home === 'false' ? false : undefined,

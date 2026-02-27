@@ -109,10 +109,7 @@ async function seedTeamSeasonStats() {
         updated_at: new Date().toISOString(),
       };
 
-      await upsertSupabase('team_season_stats', [record]);
-      console.log(`  [${season}] ✓ Team stats saved (${nyrb.count_games} games)`);
-
-      // Also seed all teams for league scatter data
+      // Seed all teams first for league scatter data
       const allTeamRecords = xgData.map((t: any) => ({
         id: `${t.team_id}-${season}`,
         team: t.team_name || t.team_id,
@@ -129,6 +126,10 @@ async function seedTeamSeasonStats() {
 
       await upsertSupabase('team_season_stats', allTeamRecords);
       console.log(`  [${season}] ✓ All ${allTeamRecords.length} teams saved`);
+
+      // Then upsert NYRB-specific (with Goals Added + xPass) to override any name issues
+      await upsertSupabase('team_season_stats', [record]);
+      console.log(`  [${season}] ✓ Team stats saved (${nyrb.count_games} games)`);
     } catch (err: any) {
       console.error(`  [${season}] Error: ${err.message}`);
     }
@@ -141,6 +142,27 @@ async function seedTeamSeasonStats() {
 
 async function seedPlayerSeasonHistory() {
   console.log('\n═══ Seeding Player Season History ═══');
+
+  // Build player name lookup (xgoals endpoint doesn't return names)
+  // ASA returns max 1000 per request, paginate to get all
+  console.log('  Building player name lookup...');
+  const nameMap = new Map<string, { name: string; position: string }>();
+  let offset = 0;
+  const pageSize = 1000;
+  while (true) {
+    const batch: any[] = await fetchJSON(`${ASA_BASE}/mls/players?offset=${offset}&limit=${pageSize}`);
+    for (const p of batch) {
+      nameMap.set(p.player_id, {
+        name: p.player_name || 'Unknown',
+        position: p.primary_general_position || 'Unknown',
+      });
+    }
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+    await delay(500);
+  }
+  console.log(`  Name lookup: ${nameMap.size} players indexed.`);
+  await delay(1000);
 
   for (const season of SEASONS) {
     console.log(`  [${season}] Fetching player xG...`);
@@ -186,12 +208,13 @@ async function seedPlayerSeasonHistory() {
 
       const records = players.map((p: any) => {
         const ga = gaMap.get(p.player_id) || {};
+        const info = nameMap.get(p.player_id);
         return {
           id: `${p.player_id}-${season}`,
-          player_name: p.player_name || 'Unknown',
+          player_name: info?.name || 'Unknown',
           team: 'New York Red Bulls',
           season,
-          position: p.general_position || 'Unknown',
+          position: p.general_position || info?.position || 'Unknown',
           games_played: p.count_games || 0,
           minutes: p.minutes_played || 0,
           goals: p.goals || 0,
@@ -210,8 +233,11 @@ async function seedPlayerSeasonHistory() {
         };
       });
 
-      await upsertSupabase('player_season_history', records);
-      console.log(`  [${season}] ✓ ${records.length} players saved`);
+      // Filter out unresolved players to avoid unique constraint batch failures
+      const resolved = records.filter((r: any) => r.player_name !== 'Unknown');
+      const skipped = records.length - resolved.length;
+      await upsertSupabase('player_season_history', resolved);
+      console.log(`  [${season}] ✓ ${resolved.length} players saved${skipped ? ` (${skipped} unresolved skipped)` : ''}`);
     } catch (err: any) {
       console.error(`  [${season}] Error: ${err.message}`);
     }

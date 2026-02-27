@@ -35,7 +35,7 @@ export interface OverviewMetrics {
 
 const EMPTY_OVERVIEW: OverviewMetrics = { points: 0, ppg: 0, xgDiff: 0, goalsAdded: 0, form: [], confRank: 0, gamesPlayed: 0, goalsFor: 0, goalsAgainst: 0, xgFor: 0, xgAgainst: 0 };
 
-export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics> {
+export async function getOverviewMetrics(season = 2025): Promise<OverviewMetrics> {
   if (!isConfigured) return EMPTY_OVERVIEW;
   return safeQuery(async () => {
     const [standingRes, teamStatsRes] = await Promise.all([
@@ -60,7 +60,7 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
   }, EMPTY_OVERVIEW);
 }
 
-export async function getSeasonXgRace(season = 2026) {
+export async function getSeasonXgRace(season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -78,7 +78,7 @@ export async function getSeasonXgRace(season = 2026) {
   }, []);
 }
 
-export async function getFormStreak(season = 2026, limit = 10) {
+export async function getFormStreak(season = 2025, limit = 10) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -90,7 +90,7 @@ export async function getFormStreak(season = 2026, limit = 10) {
   }, []);
 }
 
-export async function getPointsTrajectory(season = 2026) {
+export async function getPointsTrajectory(season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -108,7 +108,7 @@ export async function getPointsTrajectory(season = 2026) {
   }, []);
 }
 
-export async function getTopPerformers(season = 2026, limit = 3) {
+export async function getTopPerformers(season = 2025, limit = 3) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -122,7 +122,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
 
 // ── Matches ─────────────────────────────────────────────────────
 
-export async function getMatchList(season = 2026, filters?: { result?: string; home?: boolean }) {
+export async function getMatchList(season = 2025, filters?: { result?: string; home?: boolean }) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -183,7 +183,7 @@ export async function getMatchPlayerStats(matchId: string) {
 
 // ── Players ─────────────────────────────────────────────────────
 
-export async function getPlayerList(season = 2026, filters?: { position?: string; sort?: string }) {
+export async function getPlayerList(season = 2025, filters?: { position?: string; sort?: string }) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     let query = supabase.from('player_stats').select('*').eq('team', NYRB).eq('season', season);
@@ -194,7 +194,7 @@ export async function getPlayerList(season = 2026, filters?: { position?: string
   }, []);
 }
 
-export async function getPlayerDetail(playerName: string, season = 2026) {
+export async function getPlayerDetail(playerName: string, season = 2025) {
   if (!isConfigured) return null;
   return safeQuery(async () => {
     const { data } = await supabase.from('player_stats').select('*').eq('name', playerName).eq('season', season).single();
@@ -202,7 +202,7 @@ export async function getPlayerDetail(playerName: string, season = 2026) {
   }, null);
 }
 
-export async function getPlayerMatchLog(playerName: string, _season = 2026) {
+export async function getPlayerMatchLog(playerName: string, _season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase
@@ -222,7 +222,7 @@ export async function getPlayerSeasonHistory(playerName: string) {
   }, []);
 }
 
-export async function getPlayerGoalsAddedBreakdown(playerName: string, season = 2026) {
+export async function getPlayerGoalsAddedBreakdown(playerName: string, season = 2025) {
   if (!isConfigured) return null;
   return safeQuery(async () => {
     const { data } = await supabase
@@ -233,7 +233,7 @@ export async function getPlayerGoalsAddedBreakdown(playerName: string, season = 
   }, null);
 }
 
-export async function getPlayersForCompare(playerNames: string[], season = 2026) {
+export async function getPlayersForCompare(playerNames: string[], season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase.from('player_stats').select('*').eq('season', season).in('name', playerNames);
@@ -243,7 +243,7 @@ export async function getPlayersForCompare(playerNames: string[], season = 2026)
 
 // ── Team ────────────────────────────────────────────────────────
 
-export async function getTeamMatchTrends(season = 2026) {
+export async function getTeamMatchTrends(season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase.from('team_match_advanced').select('*').eq('team', NYRB).eq('season', season).order('match_date', { ascending: true });
@@ -251,12 +251,12 @@ export async function getTeamMatchTrends(season = 2026) {
   }, []);
 }
 
-export async function getHomeAwaySplit(season = 2026) {
+export async function getHomeAwaySplit(season = 2025) {
   if (!isConfigured) return { home: null, away: null };
   return safeQuery(async () => {
     const { data } = await supabase
       .from('team_match_advanced')
-      .select('is_home, result, goals_for, goals_against, xg_for, xg_against, possession, shots, clean_sheet')
+      .select('is_home, result, goals_for, goals_against, xg_for, xg_against, clean_sheet')
       .eq('team', NYRB).eq('season', season);
     if (!data) return { home: null, away: null };
     const aggregate = (matches: typeof data) => {
@@ -270,7 +270,6 @@ export async function getHomeAwaySplit(season = 2026) {
         goalsAgainst: matches.reduce((s, m) => s + (m.goals_against ?? 0), 0),
         avgXgFor: +(matches.reduce((s, m) => s + Number(m.xg_for ?? 0), 0) / count).toFixed(2),
         avgXgAgainst: +(matches.reduce((s, m) => s + Number(m.xg_against ?? 0), 0) / count).toFixed(2),
-        avgPossession: +(matches.reduce((s, m) => s + Number(m.possession ?? 0), 0) / count).toFixed(1),
         cleanSheets: matches.filter((m) => m.clean_sheet).length,
       };
     };
@@ -278,7 +277,7 @@ export async function getHomeAwaySplit(season = 2026) {
   }, { home: null, away: null });
 }
 
-export async function getShotZones(season = 2026) {
+export async function getShotZones(season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data: matches } = await supabase
@@ -293,23 +292,26 @@ export async function getShotZones(season = 2026) {
 
 // ── League ──────────────────────────────────────────────────────
 
-export async function getEnhancedStandings(season = 2026, conference = 'Eastern') {
+export async function getEnhancedStandings(season = 2025, conference = 'Eastern') {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const [standingsRes, teamStatsRes] = await Promise.all([
       supabase.from('standings').select('*').eq('season', season).eq('conference', conference).order('position'),
-      supabase.from('team_season_stats').select('team, xg_for, xg_against, xg_diff, goals_added, xpass').eq('season', season),
+      supabase.from('team_season_stats').select('team, xg_for, xg_against, goals_added, xpass').eq('season', season),
     ]);
     const standings = standingsRes.data || [];
     const statsMap = new Map((teamStatsRes.data || []).map((t) => [t.team, t]));
     return standings.map((s) => {
       const ts = statsMap.get(s.team);
-      return { ...s, xg_for: ts ? Number(ts.xg_for) : null, xg_against: ts ? Number(ts.xg_against) : null, xg_diff: ts ? Number(ts.xg_diff) : null, goals_added: ts ? Number(ts.goals_added) : null };
+      const xgFor = ts ? Number(ts.xg_for) : null;
+      const xgAgainst = ts ? Number(ts.xg_against) : null;
+      const xgDiff = xgFor != null && xgAgainst != null ? +(xgFor - xgAgainst).toFixed(1) : null;
+      return { ...s, xg_for: xgFor, xg_against: xgAgainst, xg_diff: xgDiff, goals_added: ts ? Number(ts.goals_added) : null };
     });
   }, []);
 }
 
-export async function getStandingsHistory(season = 2026, conference = 'Eastern') {
+export async function getStandingsHistory(season = 2025, conference = 'Eastern') {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase.from('standings_history').select('*').eq('season', season).eq('conference', conference).order('week', { ascending: true });
@@ -317,7 +319,7 @@ export async function getStandingsHistory(season = 2026, conference = 'Eastern')
   }, []);
 }
 
-export async function getLeagueXgScatter(season = 2026) {
+export async function getLeagueXgScatter(season = 2025) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase.from('team_season_stats').select('team, xg_for, xg_against, goals_added, points, games_played').eq('season', season);
@@ -325,7 +327,7 @@ export async function getLeagueXgScatter(season = 2026) {
   }, []);
 }
 
-export async function getTopScorers(season = 2026, limit = 20) {
+export async function getTopScorers(season = 2025, limit = 20) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     const { data } = await supabase.from('player_stats').select('name, team, goals, assists, xg, minutes, games_played').eq('season', season).order('goals', { ascending: false }).limit(limit);

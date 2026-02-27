@@ -139,28 +139,52 @@ async function syncPlayerStats() {
   console.log("[PLAYERS] Fetching player stats from ASA...");
 
   try {
+    // Fetch all MLS player names to join with xgoals data
+    // ASA returns max 1000 per request, paginate to get all
+    console.log("[PLAYERS] Building player name lookup...");
+    const nameMap = new Map<string, { name: string; position: string }>();
+    let offset = 0;
+    const pageSize = 1000;
+    while (true) {
+      const batch: any[] = await fetchJSON(`${ASA_BASE}/mls/players?offset=${offset}&limit=${pageSize}`);
+      for (const p of batch) {
+        nameMap.set(p.player_id, {
+          name: p.player_name || "Unknown",
+          position: p.primary_general_position || "Unknown",
+        });
+      }
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+      await rateLimit(500);
+    }
+    console.log(`[PLAYERS] Name lookup: ${nameMap.size} players indexed.`);
+    await rateLimit(1000);
+
     const data = await fetchJSON(
       `${ASA_BASE}/mls/players/xgoals?season_name=${CURRENT_SEASON}&team_id=a2lqRX2Mr0`
     );
 
     const players = data || [];
-    const records = players.map((p: any) => ({
-      id: p.player_id || `${p.player_name}-${CURRENT_SEASON}`,
-      name: p.player_name || "Unknown",
-      team: "New York Red Bulls",
-      position: p.general_position || "Unknown",
-      season: CURRENT_SEASON,
-      games_played: p.count_games || 0,
-      minutes: p.minutes_played || 0,
-      goals: p.goals || 0,
-      assists: p.assists || 0,
-      xg: p.xgoals || 0,
-      xa: p.xassists || 0,
-      goals_added: p.goals_added || null,
-      key_passes: p.key_passes || null,
-      pass_completion: p.pass_completion_percentage || null,
-      updated_at: new Date().toISOString(),
-    }));
+    const records = players.map((p: any) => {
+      const info = nameMap.get(p.player_id);
+      return {
+        id: p.player_id || `unknown-${CURRENT_SEASON}`,
+        name: info?.name || "Unknown",
+        team: "New York Red Bulls",
+        position: p.general_position || info?.position || "Unknown",
+        season: CURRENT_SEASON,
+        games_played: p.count_games || 0,
+        minutes: p.minutes_played || 0,
+        goals: p.goals || 0,
+        assists: p.primary_assists || 0,
+        xg: p.xgoals || 0,
+        xa: p.xassists || 0,
+        goals_added: p.goals_added || null,
+        key_passes: p.key_passes || null,
+        pass_completion: p.pass_completion_percentage || null,
+        updated_at: new Date().toISOString(),
+      };
+    });
 
     await upsertSupabase("player_stats", records);
     console.log(`[PLAYERS] Synced ${records.length} players.`);

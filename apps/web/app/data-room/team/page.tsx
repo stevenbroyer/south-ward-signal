@@ -10,7 +10,7 @@ export default async function TeamPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
 
   const [trends, homeAway, shotZones, formStreak] = await Promise.all([
     getTeamMatchTrends(season),

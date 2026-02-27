@@ -10,7 +10,7 @@ export default async function PlayersPage({
   searchParams: Promise<{ season?: string; position?: string; sort?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
   const players = await getPlayerList(season, {
     position: params?.position,
     sort: params?.sort,

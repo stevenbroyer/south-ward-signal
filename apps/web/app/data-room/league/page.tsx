@@ -14,7 +14,7 @@ export default async function LeaguePage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
 
   const [standings, standingsHistory, xgScatter, topScorers] = await Promise.all([
     getEnhancedStandings(season, 'Eastern'),

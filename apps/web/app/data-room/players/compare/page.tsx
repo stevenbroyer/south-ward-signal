@@ -9,7 +9,7 @@ export default async function ComparePage({
   searchParams: Promise<{ season?: string; players?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2026;
+  const season = Number(params?.season) || 2025;
   const selectedNames = params?.players?.split(',').map((n) => decodeURIComponent(n.trim())).filter(Boolean) || [];
 
   const [allPlayers, comparePlayers] = await Promise.all([

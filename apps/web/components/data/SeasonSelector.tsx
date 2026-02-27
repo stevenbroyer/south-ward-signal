@@ -37,5 +37,5 @@ export function SeasonSelector({ seasons = DEFAULT_SEASONS, currentSeason }: Sea
 }
 
 export function getSeasonFromParams(searchParams: { season?: string }): number {
-  return Number(searchParams?.season) || 2026;
+  return Number(searchParams?.season) || 2025;
 }

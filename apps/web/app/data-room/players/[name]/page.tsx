@@ -20,7 +20,7 @@ export default async function PlayerDetailPage({
   const { name: encodedName } = await params;
   const sp = await searchParams;
   const playerName = decodeURIComponent(encodedName);
-  const season = Number(sp?.season) || 2026;
+  const season = Number(sp?.season) || 2025;
 
   const [player, matchLog, gaBreakdown, history] = await Promise.all([
     getPlayerDetail(playerName, season),
