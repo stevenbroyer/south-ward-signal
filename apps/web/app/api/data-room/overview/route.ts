@@ -3,7 +3,7 @@ import { getOverviewMetrics, getSeasonXgRace, getFormStreak, getPointsTrajectory
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const season = Number(searchParams.get('season')) || 2026;
+  const season = Number(searchParams.get('season')) || 2025;
 
   const [metrics, xgRace, formStreak, trajectory, topPerformers] = await Promise.all([
     getOverviewMetrics(season),

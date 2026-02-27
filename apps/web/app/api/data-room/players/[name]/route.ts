@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { name } = await params;
   const { searchParams } = new URL(request.url);
-  const season = Number(searchParams.get('season')) || 2026;
+  const season = Number(searchParams.get('season')) || 2025;
   const playerName = decodeURIComponent(name);
 
   const [player, matchLog, gaBreakdown, history] = await Promise.all([
