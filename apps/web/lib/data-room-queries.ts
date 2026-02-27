@@ -117,7 +117,7 @@ export async function getTopPerformers(season = 2025, limit = 3) {
   return safeQuery(async () => {
     const { data } = await supabase
       .from('player_stats')
-      .select('name, position, goals, assists, xg, goals_added, minutes, games_played')
+      .select('name, position, goals, assists, xg, goals_added, minutes, games_played, image_url')
       .eq('team', NYRB).eq('season', season)
       .order('goals', { ascending: false }).order('xg', { ascending: false }).limit(limit);
     return data || [];
@@ -370,5 +370,58 @@ export async function getSeasonsList() {
   return safeQuery(async () => {
     const { data } = await supabase.from('team_season_stats').select('season').eq('team', NYRB).order('season', { ascending: false });
     return (data || []).map((d) => d.season);
+  }, []);
+}
+
+// ── Goalkeeper ──────────────────────────────────────────────────
+
+export async function getGKStats(season = 2025) {
+  if (!isConfigured) return [];
+  return safeQuery(async () => {
+    const { data } = await supabase
+      .from('player_stats')
+      .select('name, position, games_played, minutes, goals_added, image_url, sofascore_id')
+      .eq('team', NYRB).eq('season', season).eq('position', 'GK');
+    return data || [];
+  }, []);
+}
+
+// ── Market Values & Transfers ───────────────────────────────────
+
+export async function getPlayerMarketValues(playerName: string) {
+  if (!isConfigured) return [];
+  return safeQuery(async () => {
+    const { data } = await supabase
+      .from('player_market_values')
+      .select('date, value_eur, team')
+      .eq('player_name', playerName)
+      .order('date', { ascending: true });
+    return data || [];
+  }, []);
+}
+
+export async function getPlayerTransfers(playerName: string) {
+  if (!isConfigured) return [];
+  return safeQuery(async () => {
+    const { data } = await supabase
+      .from('player_transfers')
+      .select('from_club, to_club, transfer_date, fee_eur, fee_text, season')
+      .eq('player_name', playerName)
+      .order('transfer_date', { ascending: false });
+    return data || [];
+  }, []);
+}
+
+// ── Enhanced Standings (with logos) ─────────────────────────────
+
+export async function getStandingsWithLogos(season = 2025, conference = 'Eastern') {
+  if (!isConfigured) return [];
+  return safeQuery(async () => {
+    const { data } = await supabase
+      .from('standings')
+      .select('*')
+      .eq('season', season).eq('conference', conference)
+      .order('position');
+    return data || [];
   }, []);
 }

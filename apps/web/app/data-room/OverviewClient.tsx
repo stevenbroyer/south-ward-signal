@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { MatchScoreboard } from '@/components/data/MatchScoreboard';
 import { StandingsTable } from '@/components/data/StandingsTable';
@@ -32,6 +33,7 @@ interface StandingRow {
   gd: number;
   pts: number;
   form: ('W' | 'D' | 'L')[];
+  logo_url?: string;
 }
 
 interface LegacyMetrics {
@@ -58,6 +60,7 @@ interface TopPerformer {
   goals_added: number;
   minutes: number;
   games_played: number;
+  image_url?: string;
 }
 
 interface OverviewClientProps {
@@ -155,9 +158,22 @@ export function OverviewClient({
                   <span className="text-xs font-mono text-sws-500 uppercase">{p.position}</span>
                   <span className="text-xs font-mono text-red/60">#{i + 1}</span>
                 </div>
-                <p className="font-display font-bold text-sws-white group-hover:text-red transition-colors">
-                  {p.name}
-                </p>
+                <div className="flex items-center gap-3">
+                  {p.image_url && (
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-sws-700/50 flex-shrink-0">
+                      <Image
+                        src={p.image_url}
+                        alt={p.name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+                  <p className="font-display font-bold text-sws-white group-hover:text-red transition-colors">
+                    {p.name}
+                  </p>
+                </div>
                 <div className="flex gap-4 mt-3 text-xs font-mono text-sws-400">
                   <span>{p.goals}G</span>
                   <span>{p.assists}A</span>

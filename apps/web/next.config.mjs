@@ -6,6 +6,9 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.ghost.io' },
       { protocol: 'https', hostname: '**.ghost.org' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'api.sofascore.com' },
+      { protocol: 'https', hostname: 'a.espncdn.com' },
+      { protocol: 'https', hostname: 'tmssl.akamaized.net' },
     ],
   },
   experimental: {

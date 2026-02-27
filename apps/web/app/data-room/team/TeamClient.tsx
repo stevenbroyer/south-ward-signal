@@ -14,6 +14,7 @@ import { MetricCard } from '@/components/data/MetricCard';
 import { FormStreak } from '@/components/data/FormStreak';
 import { HomeAwayComparison } from '@/components/data/HomeAwayComparison';
 import { ShotZoneHeatmap } from '@/components/data/ShotZoneHeatmap';
+import { GoalkeeperRadar } from '@/components/data/GoalkeeperRadar';
 
 interface TeamClientProps {
   xgTrend: any[];
@@ -22,6 +23,7 @@ interface TeamClientProps {
   shotZones: any[];
   defenseStats: { xgaTrend: any[]; cleanSheets: number; avgPpda: number };
   formStreak: any[];
+  gkRadar?: { playerName: string; metrics: Array<{ stat: string; value: number; average: number }> } | null;
 }
 
 function XgTrendTooltip({ active, payload }: any) {
@@ -44,6 +46,7 @@ export function TeamClient({
   shotZones,
   defenseStats,
   formStreak,
+  gkRadar,
 }: TeamClientProps) {
   const totalGames = resultTimeline.length || 1;
   const wins = resultTimeline.filter((r) => r.result === 'W').length;
@@ -164,6 +167,18 @@ export function TeamClient({
           <ShotZoneHeatmap shots={shotZones} />
         </div>
       </RevealOnScroll>
+
+      {/* Goalkeeper Analytics */}
+      {gkRadar && (
+        <RevealOnScroll>
+          <div className="mb-6">
+            <GoalkeeperRadar
+              playerName={gkRadar.playerName}
+              metrics={gkRadar.metrics}
+            />
+          </div>
+        </RevealOnScroll>
+      )}
 
       {/* Full Form */}
       <RevealOnScroll>

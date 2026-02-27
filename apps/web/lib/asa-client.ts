@@ -168,4 +168,100 @@ export async function getAllTeamXGoals(season: number): Promise<ASATeamXG[]> {
   return fetchASA(`/mls/teams/xgoals?season_name=${season}`);
 }
 
+// ── Shot & Flow Data ────────────────────────────────────────────
+
+export interface ASAGameShot {
+  game_id: string;
+  team_id: string;
+  player_id: string;
+  date: string;
+  minute: number;
+  second: number;
+  location_x: number;
+  location_y: number;
+  shot_distance: number;
+  shot_angle: number;
+  shot_body_part: string;
+  xgoal: number;
+  result: string; // 'Goal' | 'Saved' | 'Blocked' | 'Off Target' | 'Post'
+  pattern_of_play: string;
+  season_name: string;
+}
+
+export interface ASAGameFlowEntry {
+  game_id: string;
+  minute: number;
+  home_team_xgoals: number;
+  away_team_xgoals: number;
+}
+
+export async function getGameShots(gameId: string): Promise<ASAGameShot[]> {
+  return fetchASA(`/mls/games/shots?game_id=${gameId}`);
+}
+
+export async function getGameFlow(gameId: string): Promise<ASAGameFlowEntry[]> {
+  return fetchASA(`/mls/games/game-flow?game_id=${gameId}`);
+}
+
+// ── Goalkeeper Data ─────────────────────────────────────────────
+
+export interface ASAGKXGoals {
+  player_id: string;
+  player_name: string;
+  team_id: string[];
+  minutes_played: number;
+  shots_faced: number;
+  goals_conceded: number;
+  saves: number;
+  share_headed_shots: number;
+  xgoals_gk_faced: number;
+  goals_minus_xgoals_gk: number;
+  goals_divided_by_xgoals_gk: number;
+  season_name: string;
+}
+
+export interface ASAGKGoalsAdded {
+  player_id: string;
+  player_name: string;
+  team_id: string[];
+  minutes_played: number;
+  data: Array<{
+    action_type: string;
+    goals_added_raw: number;
+    goals_added_above_avg: number;
+    count_actions: number;
+  }>;
+  season_name: string;
+}
+
+export async function getGKXGoals(season: number, teamId = NYRB_ASA_ID): Promise<ASAGKXGoals[]> {
+  return fetchASA(`/mls/goalkeepers/xgoals?season_name=${season}&team_id=${teamId}`);
+}
+
+export async function getGKGoalsAdded(season: number, teamId = NYRB_ASA_ID): Promise<ASAGKGoalsAdded[]> {
+  return fetchASA(`/mls/goalkeepers/goals-added?season_name=${season}&team_id=${teamId}`);
+}
+
+// ── Team Salaries ───────────────────────────────────────────────
+
+export interface ASATeamSalary {
+  team_id: string;
+  team_name: string;
+  season_name: string;
+  guaranteed_compensation: number;
+  count_players: number;
+  avg_guaranteed_compensation: number;
+  median_guaranteed_compensation: number;
+}
+
+export async function getTeamSalaries(season: number): Promise<ASATeamSalary[]> {
+  return fetchASA(`/mls/teams/salaries?season_name=${season}`);
+}
+
+// ── Per-Game Player xGoals ──────────────────────────────────────
+
+export async function getPlayerXGoalsByGame(season: number, teamId = NYRB_ASA_ID): Promise<ASAPlayerXG[]> {
+  return fetchASA(`/mls/players/xgoals?season_name=${season}&team_id=${teamId}&split_by_game=true`);
+}
+
 export { NYRB_ASA_ID };

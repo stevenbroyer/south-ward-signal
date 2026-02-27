@@ -20,6 +20,10 @@
     "seed-historical": "tsx scripts/seed-historical.ts",
     "seed-fotmob": "tsx scripts/seed-fotmob.ts",
     "seed-sofascore": "tsx scripts/seed-sofascore.ts",
+    "seed-shots-xg": "tsx scripts/seed-shots-xg.ts",
+    "seed-standings-history": "tsx scripts/seed-standings-history.ts",
+    "seed-images": "tsx scripts/seed-images.ts",
+    "seed-market-values": "tsx scripts/seed-market-values.ts",
     "setup-ghost": "tsx scripts/setup-ghost.ts",
     "generate-viz": "bash scripts/generate-vizzes.sh"
   },

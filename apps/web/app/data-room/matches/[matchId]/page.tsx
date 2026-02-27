@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getMatchDetail, getMatchShots, getMatchXgFlow, getMatchPlayerStats } from '@/lib/data-room-queries';
+import { getMatchAveragePositions, getH2H } from '@/lib/sofascore-client';
 import { MatchDetailClient } from './MatchDetailClient';
 
 export const revalidate = 60;
@@ -18,6 +19,35 @@ export default async function MatchDetailPage({
   ]);
 
   if (!match) notFound();
+
+  // Fetch SofaScore enrichment data if we have the event ID
+  let averagePositions: { home: any[]; away: any[] } | null = null;
+  let h2hData: { homeWins: number; awayWins: number; draws: number; events: any[] } | null = null;
+  const sofascoreId = match.fotmob_id;
+
+  if (sofascoreId) {
+    const [posResult, h2hResult] = await Promise.allSettled([
+      getMatchAveragePositions(sofascoreId),
+      getH2H(sofascoreId),
+    ]);
+    if (posResult.status === 'fulfilled') {
+      averagePositions = posResult.value;
+    }
+    if (h2hResult.status === 'fulfilled' && h2hResult.value?.teamDuel) {
+      h2hData = {
+        homeWins: h2hResult.value.teamDuel.homeWins || 0,
+        awayWins: h2hResult.value.teamDuel.awayWins || 0,
+        draws: h2hResult.value.teamDuel.draws || 0,
+        events: (h2hResult.value.events || []).slice(0, 5).map((e: any) => ({
+          homeTeam: e.homeTeam?.name || '',
+          awayTeam: e.awayTeam?.name || '',
+          homeScore: e.homeScore?.current ?? 0,
+          awayScore: e.awayScore?.current ?? 0,
+          date: e.startTimestamp ? new Date(e.startTimestamp * 1000).toISOString().split('T')[0] : '',
+        })),
+      };
+    }
+  }
 
   // Parse JSON fields safely
   const stats = (match.stats || {}) as Record<string, Record<string, number>>;
@@ -63,6 +93,22 @@ export default async function MatchDetailPage({
     minute: s.minute,
   }));
 
+  // Build average positions data for the component
+  const avgPositionsHome = averagePositions?.home?.map((p: any) => ({
+    name: p.player?.name || '',
+    shirtNumber: p.player?.shirtNumber || 0,
+    x: p.averageX || 0,
+    y: p.averageY || 0,
+    isHome: true,
+  })) || [];
+  const avgPositionsAway = averagePositions?.away?.map((p: any) => ({
+    name: p.player?.name || '',
+    shirtNumber: p.player?.shirtNumber || 0,
+    x: p.averageX || 0,
+    y: p.averageY || 0,
+    isHome: false,
+  })) || [];
+
   return (
     <MatchDetailClient
       match={{
@@ -83,6 +129,8 @@ export default async function MatchDetailPage({
       events={events}
       momentum={momentum}
       playerStats={playerStats}
+      averagePositions={{ home: avgPositionsHome, away: avgPositionsAway }}
+      h2h={h2hData}
     />
   );
 }

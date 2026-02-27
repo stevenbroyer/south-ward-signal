@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { FormBadge } from './FormBadge';
 
@@ -16,6 +17,7 @@ interface StandingRow {
   gd: number;
   pts: number;
   form: FormResult[];
+  logo_url?: string;
 }
 
 const SAMPLE_STANDINGS: StandingRow[] = [
@@ -78,7 +80,19 @@ export function StandingsTable({ standings = SAMPLE_STANDINGS, className = '' }:
               >
                 <td className="py-3 px-4 font-mono text-sws-500 text-xs">{row.pos}</td>
                 <td className={`py-3 px-2 font-medium truncate max-w-[160px] ${isNYRB(row.team) ? 'text-sws-white font-semibold' : 'text-sws-300'}`}>
-                  {row.team}
+                  <span className="inline-flex items-center gap-2">
+                    {row.logo_url && (
+                      <Image
+                        src={row.logo_url}
+                        alt={row.team}
+                        width={20}
+                        height={20}
+                        className="rounded-sm flex-shrink-0"
+                        unoptimized
+                      />
+                    )}
+                    {row.team}
+                  </span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs hidden sm:table-cell">{row.played}</td>
                 <td className="py-3 px-2 text-center font-mono text-sws-300 text-xs">{row.won}</td>

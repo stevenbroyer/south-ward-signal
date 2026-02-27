@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 interface Player {
@@ -16,6 +17,7 @@ interface Player {
   goals_added: number | null;
   key_passes: number | null;
   pass_completion: number | null;
+  image_url?: string;
 }
 
 type SortKey = 'name' | 'goals' | 'assists' | 'xg' | 'goals_added' | 'minutes' | 'games_played';
@@ -97,8 +99,19 @@ export function PlayerStatsTable({ players = [], className = '' }: PlayerStatsTa
                 <td className="py-3 px-4">
                   <Link
                     href={`/data-room/players/${encodeURIComponent(p.name)}`}
-                    className="text-sws-white hover:text-red transition-colors font-medium"
+                    className="inline-flex items-center gap-2 text-sws-white hover:text-red transition-colors font-medium"
                   >
+                    {p.image_url && (
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden border border-sws-700/50 flex-shrink-0">
+                        <Image
+                          src={p.image_url}
+                          alt={p.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    )}
                     {p.name}
                   </Link>
                 </td>

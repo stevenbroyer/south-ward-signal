@@ -64,6 +64,7 @@ export default async function DataRoomOverview({
     gd: s.goal_difference,
     pts: s.points,
     form: (s.form || []) as ('W' | 'D' | 'L')[],
+    logo_url: s.logo_url || undefined,
   }));
 
   return (

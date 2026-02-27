@@ -340,6 +340,77 @@ async function syncTeamSeasonStats() {
   }
 }
 
+// ── Sync ESPN standings (2025+ — no auth required) ──────────────────────────
+
+async function syncESPNStandings() {
+  console.log("[ESPN-STANDINGS] Fetching current MLS standings from ESPN...");
+
+  try {
+    const data = await fetchJSON(
+      "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/standings"
+    );
+
+    const children = data.children || [];
+    const records: any[] = [];
+
+    for (const conf of children) {
+      const confName = conf.name || conf.abbreviation || "Unknown";
+      const conference = confName.includes("East") ? "Eastern" : "Western";
+      const entries = conf.standings?.entries || [];
+
+      for (const entry of entries) {
+        const team = entry.team?.displayName || entry.team?.name || "Unknown";
+        const teamId = String(entry.team?.id || "");
+        const stats = (entry.stats || []) as Array<{ name: string; value: number; displayValue: string }>;
+
+        const getStat = (name: string) => {
+          const s = stats.find((st) => st.name === name);
+          return s ? Number(s.value) : 0;
+        };
+
+        const wins = getStat("wins");
+        const draws = getStat("ties");
+        const losses = getStat("losses");
+        const gp = getStat("gamesPlayed") || wins + draws + losses;
+        const gf = getStat("pointsFor");
+        const ga = getStat("pointsAgainst");
+        const pts = getStat("points");
+        const rank = getStat("rank") || 0;
+
+        records.push({
+          id: `${CURRENT_SEASON}-espn-${teamId}`,
+          team,
+          team_id: teamId,
+          position: rank,
+          points: pts,
+          wins,
+          draws,
+          losses,
+          goals_for: gf,
+          goals_against: ga,
+          goal_difference: gf - ga,
+          form: [],
+          games_played: gp,
+          season: CURRENT_SEASON,
+          conference,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    if (records.length > 0) {
+      await upsertSupabase("standings", records);
+      console.log(`[ESPN-STANDINGS] Synced ${records.length} entries.`);
+    } else {
+      console.log("[ESPN-STANDINGS] No data returned.");
+    }
+    return records.length;
+  } catch (err: any) {
+    console.warn(`[ESPN-STANDINGS] ESPN unavailable: ${err.message}`);
+    return 0;
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -350,7 +421,7 @@ async function main() {
     process.exit(1);
   }
 
-  const results = { matches: 0, standings: 0, players: 0, advanced: 0, teamStats: 0 };
+  const results = { matches: 0, standings: 0, espnStandings: 0, players: 0, advanced: 0, teamStats: 0 };
 
   try {
     results.matches = await syncMatches();
@@ -361,6 +432,11 @@ async function main() {
     results.standings = await syncStandings();
     await rateLimit(2000);
   } catch (err) { console.error("[STANDINGS] Error:", err); }
+
+  try {
+    results.espnStandings = await syncESPNStandings();
+    await rateLimit(2000);
+  } catch (err) { console.error("[ESPN-STANDINGS] Error:", err); }
 
   try {
     results.players = await syncPlayerStats();
@@ -376,7 +452,7 @@ async function main() {
     results.teamStats = await syncTeamSeasonStats();
   } catch (err) { console.error("[TEAM-STATS] Error:", err); }
 
-  const summary = `Matches: ${results.matches}, Standings: ${results.standings}, Players: ${results.players}, Advanced: ${results.advanced}, TeamStats: ${results.teamStats}`;
+  const summary = `Matches: ${results.matches}, Standings: ${results.standings}, ESPN: ${results.espnStandings}, Players: ${results.players}, Advanced: ${results.advanced}, TeamStats: ${results.teamStats}`;
   console.log(`\n${summary}`);
   await notify(summary);
 

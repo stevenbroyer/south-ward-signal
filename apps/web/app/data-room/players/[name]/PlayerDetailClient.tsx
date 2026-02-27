@@ -1,10 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { MetricCard } from '@/components/data/MetricCard';
 import { PlayerRadar } from '@/components/data/PlayerRadar';
 import { SeasonProgressionChart } from '@/components/data/SeasonProgressionChart';
 import { GoalsAddedBreakdown } from '@/components/data/GoalsAddedBreakdown';
+import { MarketValueChart } from '@/components/data/MarketValueChart';
 
 interface PlayerDetailClientProps {
   player: any;
@@ -13,6 +15,7 @@ interface PlayerDetailClientProps {
   gaBreakdown: any;
   history: any[];
   matchLog: any[];
+  marketValues?: Array<{ date: string; value: number; team?: string }>;
 }
 
 export function PlayerDetailClient({
@@ -22,17 +25,45 @@ export function PlayerDetailClient({
   gaBreakdown,
   history,
   matchLog,
+  marketValues = [],
 }: PlayerDetailClientProps) {
   return (
     <div>
       {/* Player Header */}
       <RevealOnScroll>
         <div className="bg-bg-card border border-sws-700/50 rounded-xl p-6 mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-mono text-red uppercase tracking-widest mb-2">{player.position}</p>
+          <div className="flex items-start gap-5">
+            {player.image_url && (
+              <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-sws-700/50 flex-shrink-0">
+                <Image
+                  src={player.image_url}
+                  alt={player.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <p className="text-xs font-mono text-red uppercase tracking-widest mb-2">
+                {player.shirt_number ? `#${player.shirt_number} · ` : ''}{player.position}
+              </p>
               <h2 className="font-display font-black text-3xl text-sws-white">{player.name}</h2>
-              <p className="text-sm text-sws-400 mt-1 font-mono">New York Red Bulls</p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-sm text-sws-400 font-mono">New York Red Bulls</p>
+                {player.nationality && (
+                  <span className="text-xs font-mono text-sws-500">{player.nationality}</span>
+                )}
+                {player.age && (
+                  <span className="text-xs font-mono text-sws-500">Age {player.age}</span>
+                )}
+                {player.preferred_foot && (
+                  <span className="text-xs font-mono text-sws-500">{player.preferred_foot} foot</span>
+                )}
+                {player.height_cm && (
+                  <span className="text-xs font-mono text-sws-500">{player.height_cm}cm</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -69,6 +100,18 @@ export function PlayerDetailClient({
         <RevealOnScroll>
           <div className="mb-6">
             <SeasonProgressionChart data={progression} />
+          </div>
+        </RevealOnScroll>
+      )}
+
+      {/* Market Value */}
+      {marketValues.length > 0 && (
+        <RevealOnScroll>
+          <div className="mb-6">
+            <MarketValueChart
+              playerName={player.name}
+              data={marketValues}
+            />
           </div>
         </RevealOnScroll>
       )}

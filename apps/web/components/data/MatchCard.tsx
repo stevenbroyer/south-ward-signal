@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { getTeamLogoUrl } from '@/lib/image-urls';
 
 interface MatchCardProps {
   id: string;
@@ -73,11 +75,13 @@ export function MatchCard({
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+          <div className="flex-1 min-w-0 space-y-1">
+            <p className={`text-sm font-medium truncate inline-flex items-center gap-2 ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+              {(() => { const logo = getTeamLogoUrl(homeTeam); return logo ? <Image src={logo} alt="" width={16} height={16} className="rounded-sm flex-shrink-0" unoptimized /> : null; })()}
               {homeTeam}
             </p>
-            <p className={`text-sm font-medium truncate ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+            <p className={`text-sm font-medium truncate inline-flex items-center gap-2 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+              {(() => { const logo = getTeamLogoUrl(awayTeam); return logo ? <Image src={logo} alt="" width={16} height={16} className="rounded-sm flex-shrink-0" unoptimized /> : null; })()}
               {awayTeam}
             </p>
           </div>

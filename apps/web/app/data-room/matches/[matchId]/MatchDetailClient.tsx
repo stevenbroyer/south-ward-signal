@@ -8,6 +8,8 @@ import { EventTimeline } from '@/components/data/EventTimeline';
 import { PlayerRatingGrid } from '@/components/data/PlayerRatingGrid';
 import { MomentumChart } from '@/components/data/MomentumChart';
 import { StatComparisonBars } from '@/components/data/StatComparisonBars';
+import { AveragePositionsMap } from '@/components/data/AveragePositionsMap';
+import { H2HComparison } from '@/components/data/H2HComparison';
 
 interface MatchInfo {
   id: string;
@@ -39,6 +41,21 @@ interface Shot {
   minute: number;
 }
 
+interface PlayerPosition {
+  name: string;
+  shirtNumber: number;
+  x: number;
+  y: number;
+  isHome: boolean;
+}
+
+interface H2HData {
+  homeWins: number;
+  awayWins: number;
+  draws: number;
+  events: Array<{ homeTeam: string; awayTeam: string; homeScore: number; awayScore: number; date: string }>;
+}
+
 interface MatchDetailClientProps {
   match: MatchInfo;
   statPairs: StatPair[];
@@ -47,6 +64,8 @@ interface MatchDetailClientProps {
   events: any[];
   momentum: Array<{ minute: number; value: number }>;
   playerStats: any[];
+  averagePositions?: { home: PlayerPosition[]; away: PlayerPosition[] };
+  h2h?: H2HData | null;
 }
 
 export function MatchDetailClient({
@@ -57,6 +76,8 @@ export function MatchDetailClient({
   events,
   momentum,
   playerStats,
+  averagePositions,
+  h2h,
 }: MatchDetailClientProps) {
   const isNYRBHome = match.homeTeam.includes('Red Bulls');
   const nybWon = isNYRBHome
@@ -174,6 +195,32 @@ export function MatchDetailClient({
               homeTeam={match.homeTeam}
               awayTeam={match.awayTeam}
             />
+          </div>
+        </RevealOnScroll>
+      )}
+
+      {/* Average Positions & H2H */}
+      {(averagePositions?.home?.length || h2h) && (
+        <RevealOnScroll>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {averagePositions && averagePositions.home.length > 0 && (
+              <AveragePositionsMap
+                home={averagePositions.home}
+                away={averagePositions.away}
+                homeTeam={match.homeTeam}
+                awayTeam={match.awayTeam}
+              />
+            )}
+            {h2h && (
+              <H2HComparison
+                homeTeam={match.homeTeam}
+                awayTeam={match.awayTeam}
+                homeWins={h2h.homeWins}
+                awayWins={h2h.awayWins}
+                draws={h2h.draws}
+                recentMatches={h2h.events}
+              />
+            )}
           </div>
         </RevealOnScroll>
       )}

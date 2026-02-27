@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { BumpChart } from '@/components/data/BumpChart';
@@ -63,7 +64,19 @@ export function LeagueClient({
                   >
                     <td className="py-3 px-4 font-mono text-sws-500 text-xs">{row.position}</td>
                     <td className={`py-3 px-2 font-medium truncate max-w-[180px] ${isNYRB(row.team) ? 'text-sws-white font-semibold' : 'text-sws-300'}`}>
-                      {row.team}
+                      <span className="inline-flex items-center gap-2">
+                        {row.logo_url && (
+                          <Image
+                            src={row.logo_url}
+                            alt={row.team}
+                            width={20}
+                            height={20}
+                            className="rounded-sm flex-shrink-0"
+                            unoptimized
+                          />
+                        )}
+                        {row.team}
+                      </span>
                     </td>
                     <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{row.games_played}</td>
                     <td className="py-3 px-2 text-center font-mono text-sws-300 text-xs">{row.wins}</td>

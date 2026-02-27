@@ -5,6 +5,7 @@ import {
   getPlayerMatchLog,
   getPlayerGoalsAddedBreakdown,
   getPlayerSeasonHistory,
+  getPlayerMarketValues,
 } from '@/lib/data-room-queries';
 import { PlayerDetailClient } from './PlayerDetailClient';
 
@@ -22,11 +23,12 @@ export default async function PlayerDetailPage({
   const playerName = decodeURIComponent(encodedName);
   const season = Number(sp?.season) || 2025;
 
-  const [player, matchLog, gaBreakdown, history] = await Promise.all([
+  const [player, matchLog, gaBreakdown, history, marketValues] = await Promise.all([
     getPlayerDetail(playerName, season),
     getPlayerMatchLog(playerName, season),
     getPlayerGoalsAddedBreakdown(playerName, season),
     getPlayerSeasonHistory(playerName),
+    getPlayerMarketValues(playerName),
   ]);
 
   if (!player) notFound();
@@ -74,6 +76,11 @@ export default async function PlayerDetailPage({
         gaBreakdown={gaBreakdown}
         history={history}
         matchLog={matchLog}
+        marketValues={marketValues.map((mv: any) => ({
+          date: mv.date,
+          value: Number(mv.value_eur) || 0,
+          team: mv.team || undefined,
+        }))}
       />
     </div>
   );

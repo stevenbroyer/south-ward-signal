@@ -257,4 +257,99 @@ export function extractEvents(data: { incidents: SofaScoreIncident[] }): SofaSco
   );
 }
 
+// ── New API Functions ───────────────────────────────────────────
+
+export interface SofaScoreShotmapShot {
+  player: { name: string; id: number };
+  isHome: boolean;
+  shotType: string;
+  bodyPart: string;
+  goalMouthLocation?: string;
+  xg?: number;
+  playerCoordinates: { x: number; y: number; z?: number };
+  draw?: { start: { x: number; y: number }; end: { x: number; y: number } };
+  time: number;
+  addedTime?: number;
+  situation?: string;
+  reversedPeriodTime?: number;
+}
+
+export interface SofaScoreGraphPoint {
+  minute: number;
+  value: number;
+}
+
+export interface SofaScoreAveragePosition {
+  player: { name: string; id: number; shirtNumber: number };
+  averageX: number;
+  averageY: number;
+  pointsCount: number;
+}
+
+export interface SofaScorePlayerInfo {
+  player: {
+    name: string;
+    id: number;
+    dateOfBirthTimestamp?: number;
+    country?: { name: string; alpha2: string };
+    preferredFoot?: string;
+    height?: number;
+    shirtNumber?: number;
+    position?: string;
+    team?: { name: string; id: number };
+  };
+}
+
+export interface SofaScoreH2H {
+  teamDuel: {
+    homeWins: number;
+    awayWins: number;
+    draws: number;
+  };
+  managerDuel?: {
+    homeManagerName: string;
+    awayManagerName: string;
+  };
+  events: SofaScoreEvent[];
+}
+
+export async function getMatchShotmap(eventId: string | number) {
+  return cachedFetch(`sofascore:shotmap:${eventId}`, () =>
+    fetchSofaScore<{ shotmap: SofaScoreShotmapShot[] }>(`/event/${eventId}/shotmap`)
+  );
+}
+
+export async function getMatchGraph(eventId: string | number) {
+  return cachedFetch(`sofascore:graph:${eventId}`, () =>
+    fetchSofaScore<{ graphPoints: SofaScoreGraphPoint[] }>(`/event/${eventId}/graph`)
+  );
+}
+
+export async function getMatchAveragePositions(eventId: string | number) {
+  return cachedFetch(`sofascore:avg-positions:${eventId}`, () =>
+    fetchSofaScore<{ home: SofaScoreAveragePosition[]; away: SofaScoreAveragePosition[] }>(
+      `/event/${eventId}/average-positions`
+    )
+  );
+}
+
+export async function getPlayerInfo(playerId: string | number) {
+  return cachedFetch(`sofascore:player:${playerId}`, () =>
+    fetchSofaScore<SofaScorePlayerInfo>(`/player/${playerId}`)
+  );
+}
+
+export async function getH2H(eventId: string | number) {
+  return cachedFetch(`sofascore:h2h:${eventId}`, () =>
+    fetchSofaScore<SofaScoreH2H>(`/event/${eventId}/h2h`)
+  );
+}
+
+export async function getMLSTopPlayers(seasonId: number, position?: string) {
+  const posParam = position ? `&position=${position}` : '';
+  return fetchSofaScore<{ results: Array<{ player: any; statistics: any }> }>(
+    `/unique-tournament/${MLS_TOURNAMENT_ID}/season/${seasonId}/top-players/overall${posParam}`
+  );
+}
+
 export { NYRB_SOFASCORE_ID, MLS_TOURNAMENT_ID };

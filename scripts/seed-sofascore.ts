@@ -96,6 +96,25 @@ async function enrichMatch(matchId: string, sofascoreEventId: number, homeTeam: 
     } catch { /* stats not always available */ }
     await delay(500);
 
+    // Fetch momentum graph
+    let momentumData: any[] = [];
+    try {
+      const graphRes = await fetchSofaScore(`/event/${sofascoreEventId}/graph`);
+      momentumData = (graphRes.graphPoints || []).map((p: any) => ({
+        minute: p.minute,
+        value: p.value,
+      }));
+    } catch { /* graph not always available */ }
+    await delay(500);
+
+    // Fetch shotmap (supplement match_shots if empty)
+    let shotmapData: any[] = [];
+    try {
+      const shotmapRes = await fetchSofaScore(`/event/${sofascoreEventId}/shotmap`);
+      shotmapData = shotmapRes.shotmap || [];
+    } catch { /* shotmap not always available */ }
+    await delay(500);
+
     // Extract events from incidents
     const incidents = (incidentData.incidents || []).filter(
       (i: any) => i.incidentType === 'goal' || i.incidentType === 'card' || i.incidentType === 'substitution'
@@ -113,12 +132,39 @@ async function enrichMatch(matchId: string, sofascoreEventId: number, homeTeam: 
       playerOut: i.playerOut?.name || null,
     }));
 
-    // Update matches table
-    await patchSupabase('matches', `id=eq.${matchId}`, {
-      fotmob_id: String(sofascoreEventId), // reusing column for SofaScore event ID
+    // Build structured stats JSONB from statistics
+    let parsedStats: Record<string, Record<string, number>> = {};
+    if (statistics?.statistics) {
+      const allPeriod = statistics.statistics.find((s: any) => s.period === 'ALL');
+      if (allPeriod) {
+        for (const group of allPeriod.groups || []) {
+          for (const item of group.statisticsItems || []) {
+            const key = item.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '_')
+              .replace(/(^_|_$)/g, '');
+            parsedStats[key] = {
+              home: parseFloat(item.home) || 0,
+              away: parseFloat(item.away) || 0,
+            };
+          }
+        }
+      }
+    }
+
+    // Update matches table with events, momentum, and structured stats
+    const matchPatch: any = {
+      fotmob_id: String(sofascoreEventId),
       events: JSON.stringify(events),
       updated_at: new Date().toISOString(),
-    });
+    };
+    if (momentumData.length > 0) {
+      matchPatch.momentum = JSON.stringify(momentumData);
+    }
+    if (Object.keys(parsedStats).length > 0) {
+      matchPatch.stats = JSON.stringify(parsedStats);
+    }
+    await patchSupabase('matches', `id=eq.${matchId}`, matchPatch);
 
     // Extract player ratings and stats from lineups
     const playerRecords: any[] = [];
@@ -156,18 +202,42 @@ async function enrichMatch(matchId: string, sofascoreEventId: number, homeTeam: 
       await upsertSupabase('player_match_stats', playerRecords);
     }
 
-    // Extract match stats if available
-    let statsSummary = '';
-    if (statistics?.statistics) {
-      const allPeriod = statistics.statistics.find((s: any) => s.period === 'ALL');
-      if (allPeriod) {
-        const possession = allPeriod.groups?.find((g: any) => g.groupName === 'Match overview')
-          ?.statisticsItems?.find((s: any) => s.name === 'Ball possession');
-        if (possession) statsSummary = `possession: ${possession.home}-${possession.away}`;
+    // Supplement match_shots from SofaScore shotmap if we have data
+    if (shotmapData.length > 0) {
+      const shotRecords = shotmapData.map((s: any) => {
+        const shotType = s.shotType || 'regular';
+        const isGoal = shotType === 'goal';
+        const isSaved = shotType === 'save' || shotType === 'saved';
+        const isBlocked = shotType === 'blocked';
+        const isPost = shotType === 'post';
+        const outcome = isGoal ? 'goal' : isSaved ? 'saved' : isBlocked ? 'blocked' : isPost ? 'post' : 'off_target';
+
+        return {
+          match_id: matchId,
+          team: s.isHome ? homeTeam : awayTeam,
+          player: s.player?.name || 'Unknown',
+          minute: s.time || 0,
+          x: s.playerCoordinates?.x ?? 50,
+          y: s.playerCoordinates?.y ?? 50,
+          xg: s.xg || 0,
+          outcome,
+          body_part: s.bodyPart || null,
+          shot_type: s.situation || null,
+          home_team_side: s.isHome,
+        };
+      });
+      if (shotRecords.length) {
+        await upsertSupabase('match_shots', shotRecords);
       }
     }
 
-    console.log(`  ✓ ${matchId}: ${events.length} events, ${playerRecords.length} players ${statsSummary}`);
+    const statsSummary = Object.keys(parsedStats).length > 0
+      ? `stats: ${Object.keys(parsedStats).length} metrics`
+      : '';
+    const momentumSummary = momentumData.length > 0 ? `momentum: ${momentumData.length}pts` : '';
+    const shotsSummary = shotmapData.length > 0 ? `shots: ${shotmapData.length}` : '';
+
+    console.log(`  ✓ ${matchId}: ${events.length} events, ${playerRecords.length} players ${[statsSummary, momentumSummary, shotsSummary].filter(Boolean).join(', ')}`);
     return true;
   } catch (err: any) {
     console.error(`  ✗ ${matchId}: ${err.message}`);
@@ -185,10 +255,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Get finished NYRB matches without enrichment (fotmob_id is null)
+  // Get finished NYRB matches — re-enrich all to fill momentum/stats/shotmap
   const matches = await querySupabase(
     'matches',
-    `status=eq.finished&fotmob_id=is.null&or=(home_team.eq.New York Red Bulls,away_team.eq.New York Red Bulls)&order=date.desc`
+    `status=eq.finished&or=(home_team.eq.New York Red Bulls,away_team.eq.New York Red Bulls)&order=date.desc`
   );
 
   console.log(`Found ${matches.length} matches to enrich.\n`);
