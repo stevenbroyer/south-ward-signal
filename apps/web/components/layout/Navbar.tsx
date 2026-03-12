@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { m } from 'motion/react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -50,9 +51,13 @@ export function Navbar() {
         <nav className="max-w-container mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded bg-red flex items-center justify-center font-display font-black text-sm text-white group-hover:glow-red-strong transition-shadow duration-300">
-              SW
-            </div>
+            <Image
+              src="/images/rbny-crest.png"
+              alt="New York Red Bulls"
+              width={32}
+              height={27}
+              className="group-hover:drop-shadow-[0_0_6px_rgba(237,26,61,0.5)] transition-all duration-300"
+            />
             <span className="font-display font-bold text-lg text-sws-white hidden sm:block">
               South Ward Signal
             </span>

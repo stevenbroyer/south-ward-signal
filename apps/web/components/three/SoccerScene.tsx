@@ -1,9 +1,9 @@
 // @ts-nocheck
 'use client';
 
-import { useRef, useMemo, useCallback, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Float, MeshDistortMaterial, Sparkles } from '@react-three/drei';
+import { useRef, useMemo, useEffect, useState, forwardRef } from 'react';
+import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
+import { Float, Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
@@ -13,12 +13,10 @@ type Tier = 'high' | 'medium' | 'low';
 
 interface TierConfig {
   risingParticles: number;
-  orbitingParticles: number;
   sparkles: number;
-  hexGround: boolean;
   bloom: boolean;
   bloomIntensity: number;
-  thirdRing: boolean;
+  goalFrame: boolean;
   mouseTrack: boolean;
   dpr: [number, number];
   antialias: boolean;
@@ -26,37 +24,31 @@ interface TierConfig {
 
 const TIER_CONFIGS: Record<Tier, TierConfig> = {
   high: {
-    risingParticles: 120,
-    orbitingParticles: 20,
+    risingParticles: 100,
     sparkles: 40,
-    hexGround: true,
     bloom: true,
-    bloomIntensity: 0.6,
-    thirdRing: true,
+    bloomIntensity: 0.5,
+    goalFrame: true,
     mouseTrack: true,
     dpr: [1, 2],
     antialias: true,
   },
   medium: {
-    risingParticles: 60,
-    orbitingParticles: 10,
+    risingParticles: 50,
     sparkles: 20,
-    hexGround: true,
     bloom: true,
     bloomIntensity: 0.3,
-    thirdRing: true,
+    goalFrame: true,
     mouseTrack: true,
     dpr: [1, 1.5],
     antialias: true,
   },
   low: {
-    risingParticles: 30,
-    orbitingParticles: 0,
+    risingParticles: 25,
     sparkles: 10,
-    hexGround: false,
     bloom: false,
     bloomIntensity: 0,
-    thirdRing: false,
+    goalFrame: false,
     mouseTrack: false,
     dpr: [1, 1],
     antialias: false,
@@ -72,281 +64,265 @@ function detectTier(): Tier {
   return 'medium';
 }
 
-/* ─── Hex Ground Plane ───────────────────────────────────── */
+/* ─── RBNY Crest (floating textured plane) ───────────────── */
 
-const hexVertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const hexFragmentShader = `
-  uniform float uTime;
-  varying vec2 vUv;
-
-  // Hex distance function
-  float hexDist(vec2 p) {
-    p = abs(p);
-    return max(dot(p, normalize(vec2(1.0, 1.732))), p.x);
-  }
-
-  vec4 hexCoords(vec2 uv) {
-    vec2 r = vec2(1.0, 1.732);
-    vec2 h = r * 0.5;
-    vec2 a = mod(uv, r) - h;
-    vec2 b = mod(uv - h, r) - h;
-    vec2 gv = length(a) < length(b) ? a : b;
-    float x = atan(gv.x, gv.y);
-    float y = 0.5 - hexDist(gv);
-    return vec4(gv, x, y);
-  }
-
-  void main() {
-    vec2 uv = (vUv - 0.5) * 20.0;
-    vec4 hc = hexCoords(uv);
-
-    // Hex edge lines
-    float edge = smoothstep(0.0, 0.05, hc.w) - smoothstep(0.05, 0.1, hc.w);
-
-    // Radial fade
-    float dist = length(vUv - 0.5) * 2.0;
-    float fade = 1.0 - smoothstep(0.3, 0.9, dist);
-
-    // Subtle pulse
-    float pulse = 0.7 + 0.3 * sin(uTime * 0.5 + dist * 3.0);
-
-    float alpha = edge * fade * pulse * 0.12;
-    gl_FragColor = vec4(0.93, 0.1, 0.24, alpha);
-  }
-`;
-
-function HexGround() {
-  const matRef = useRef<THREE.ShaderMaterial>(null);
+function RBNYCrest() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const texture = useLoader(THREE.TextureLoader, '/images/rbny-crest.png');
 
   useFrame(({ clock }) => {
-    if (matRef.current) {
-      matRef.current.uniforms.uTime.value = clock.getElapsedTime();
+    const t = clock.getElapsedTime();
+    if (meshRef.current) {
+      meshRef.current.position.y = 0.8 + Math.sin(t * 0.6) * 0.12;
+      meshRef.current.rotation.y = Math.sin(t * 0.3) * 0.08;
+    }
+    if (glowRef.current) {
+      const pulse = 1.0 + Math.sin(t * 1.5) * 0.06;
+      glowRef.current.scale.setScalar(pulse);
+      (glowRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.08 + Math.sin(t * 2) * 0.03;
     }
   });
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
-      <planeGeometry args={[30, 30, 1, 1]} />
-      <shaderMaterial
-        ref={matRef}
-        vertexShader={hexVertexShader}
-        fragmentShader={hexFragmentShader}
-        uniforms={{ uTime: { value: 0 } }}
-        transparent
-        depthWrite={false}
-      />
-    </mesh>
-  );
-}
+    <group position={[0, 0, 0]}>
+      {/* Red glow behind the crest */}
+      <mesh ref={glowRef} position={[0, 0.8, -0.1]}>
+        <circleGeometry args={[2.2, 32]} />
+        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.08} side={THREE.DoubleSide} />
+      </mesh>
 
-/* ─── Pitch Grid with Draw-in Animation ──────────────────── */
+      {/* Crest */}
+      <Float speed={1.2} rotationIntensity={0.05} floatIntensity={0.15}>
+        <mesh ref={meshRef}>
+          <planeGeometry args={[2.8, 2.8 * (2000 / 2400)]} />
+          <meshBasicMaterial
+            map={texture}
+            transparent
+            opacity={0.92}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </Float>
 
-function PitchGrid() {
-  const gridRef = useRef<THREE.Group>(null);
-  const lineRefs = useRef<THREE.Line[]>([]);
-  const circleRef = useRef<THREE.Line>(null);
-  const startTime = useRef<number | null>(null);
-
-  const lines = useMemo(() => {
-    const pts: Array<{ start: [number, number, number]; end: [number, number, number]; opacity: number }> = [];
-    // Horizontal lines
-    for (let i = -6; i <= 6; i += 1.5) {
-      pts.push({
-        start: [-8, -2, i],
-        end: [8, -2, i],
-        opacity: 0.06 + Math.random() * 0.04,
-      });
-    }
-    // Vertical lines
-    for (let i = -8; i <= 8; i += 2) {
-      pts.push({
-        start: [i, -2, -6],
-        end: [i, -2, 6],
-        opacity: 0.06 + Math.random() * 0.04,
-      });
-    }
-    return pts;
-  }, []);
-
-  // Center circle geometry (dashed)
-  const circleGeometry = useMemo(() => {
-    const points: THREE.Vector3[] = [];
-    const segments = 64;
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      points.push(new THREE.Vector3(Math.cos(angle) * 2, -2.01, Math.sin(angle) * 2));
-    }
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (startTime.current === null) startTime.current = clock.getElapsedTime();
-    const elapsed = clock.getElapsedTime() - startTime.current;
-    const drawProgress = Math.min(elapsed / 2.0, 1.0); // 2s draw-in
-
-    // Animate line dash offset for draw-in effect
-    lineRefs.current.forEach((line) => {
-      if (line?.material) {
-        const mat = line.material as THREE.LineDashedMaterial;
-        mat.dashSize = 100 * drawProgress;
-        mat.gapSize = 100 * (1 - drawProgress);
-      }
-    });
-
-    if (circleRef.current?.material) {
-      const mat = circleRef.current.material as THREE.LineDashedMaterial;
-      mat.dashSize = 100 * drawProgress;
-      mat.gapSize = 100 * (1 - drawProgress);
-    }
-
-    if (gridRef.current) {
-      gridRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.1) * 0.02;
-    }
-  });
-
-  return (
-    <group ref={gridRef} position={[0, -1, 0]} rotation={[-0.3, 0, 0]}>
-      {lines.map((line, i) => (
-        <DrawLine
-          key={i}
-          start={line.start}
-          end={line.end}
-          opacity={line.opacity}
-          ref={(el: THREE.Line) => { lineRefs.current[i] = el; }}
-        />
-      ))}
-      {/* Center circle */}
-      <line ref={circleRef} geometry={circleGeometry}>
-        <lineDashedMaterial
-          color="#ED1A3D"
-          transparent
-          opacity={0.08}
-          dashSize={0}
-          gapSize={100}
-        />
-      </line>
-      {/* Center dot */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.01, 0]}>
-        <circleGeometry args={[0.1, 16]} />
-        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.15} />
+      {/* Subtle ring around the crest */}
+      <mesh position={[0, 0.8, 0]} rotation={[0, 0, 0]}>
+        <torusGeometry args={[1.8, 0.006, 16, 100]} />
+        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.1} />
       </mesh>
     </group>
   );
 }
 
-import { forwardRef } from 'react';
+/* ─── Soccer Ball (proper pentagon pattern) ──────────────── */
 
-const DrawLine = forwardRef<
+function SoccerBall() {
+  const groupRef = useRef<THREE.Group>(null);
+  const wireRef = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (groupRef.current) {
+      groupRef.current.position.y = -0.8 + Math.sin(t * 0.8) * 0.1;
+      groupRef.current.position.x = 3.5 + Math.sin(t * 0.4) * 0.15;
+    }
+    if (wireRef.current) {
+      wireRef.current.rotation.y = t * 0.3;
+      wireRef.current.rotation.x = t * 0.15;
+      wireRef.current.rotation.z = Math.sin(t * 0.5) * 0.1;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[3.5, -0.8, -2]}>
+      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.3}>
+        {/* Wireframe truncated icosahedron — classic soccer ball shape */}
+        <mesh ref={wireRef}>
+          <dodecahedronGeometry args={[0.6, 1]} />
+          <meshStandardMaterial
+            color="#F5F5F7"
+            wireframe
+            transparent
+            opacity={0.3}
+          />
+        </mesh>
+        {/* Inner core glow */}
+        <mesh>
+          <sphereGeometry args={[0.35, 16, 16]} />
+          <meshBasicMaterial color="#ED1A3D" transparent opacity={0.15} />
+        </mesh>
+      </Float>
+      {/* Ground shadow */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
+        <circleGeometry args={[0.4, 16]} />
+        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.06} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ─── Goal Frame ─────────────────────────────────────────── */
+
+function GoalFrame() {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.05) * 0.03;
+    }
+  });
+
+  const postMaterial = useMemo(
+    () => new THREE.MeshBasicMaterial({ color: '#F5F5F7', transparent: true, opacity: 0.08 }),
+    []
+  );
+
+  const netMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#F5F5F7',
+        wireframe: true,
+        transparent: true,
+        opacity: 0.03,
+      }),
+    []
+  );
+
+  return (
+    <group ref={groupRef} position={[0, -0.5, -6]} scale={[1.2, 1.2, 1.2]}>
+      {/* Left post */}
+      <mesh position={[-3.66, 1.22, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 2.44, 8]} />
+        <primitive object={postMaterial} attach="material" />
+      </mesh>
+      {/* Right post */}
+      <mesh position={[3.66, 1.22, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 2.44, 8]} />
+        <primitive object={postMaterial} attach="material" />
+      </mesh>
+      {/* Crossbar */}
+      <mesh position={[0, 2.44, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.06, 0.06, 7.32, 8]} />
+        <primitive object={postMaterial} attach="material" />
+      </mesh>
+      {/* Net (back panel — simplified) */}
+      <mesh position={[0, 1.22, -1.5]}>
+        <planeGeometry args={[7.32, 2.44, 12, 6]} />
+        <primitive object={netMaterial} attach="material" />
+      </mesh>
+      {/* Net (top panel) */}
+      <mesh position={[0, 2.44, -0.75]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[7.32, 1.5, 12, 3]} />
+        <primitive object={netMaterial} attach="material" />
+      </mesh>
+    </group>
+  );
+}
+
+/* ─── Soccer Pitch (recognizable field lines) ────────────── */
+
+function SoccerPitch() {
+  const groupRef = useRef<THREE.Group>(null);
+  const startTime = useRef<number | null>(null);
+
+  // Center circle
+  const centerCircle = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= 64; i++) {
+      const angle = (i / 64) * Math.PI * 2;
+      points.push(new THREE.Vector3(Math.cos(angle) * 2.5, 0, Math.sin(angle) * 2.5));
+    }
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, []);
+
+  // Penalty arc (top of 18-yard box)
+  const penaltyArc = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= 32; i++) {
+      const angle = (-Math.PI * 0.35) + (i / 32) * (Math.PI * 0.7);
+      points.push(new THREE.Vector3(Math.cos(angle) * 2, 0, -8 + Math.sin(angle) * 2));
+    }
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, []);
+
+  const lineMat = useMemo(
+    () => ({ color: '#ED1A3D', transparent: true, opacity: 0.1 }),
+    []
+  );
+
+  useFrame(({ clock }) => {
+    if (startTime.current === null) startTime.current = clock.getElapsedTime();
+    if (groupRef.current) {
+      groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.08) * 0.02;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, -2, 0]} rotation={[-0.25, 0, 0]}>
+      {/* Touchlines (field border) */}
+      <PitchLine start={[-8, 0, -6]} end={[8, 0, -6]} opacity={0.08} />
+      <PitchLine start={[-8, 0, 6]} end={[8, 0, 6]} opacity={0.08} />
+      <PitchLine start={[-8, 0, -6]} end={[-8, 0, 6]} opacity={0.08} />
+      <PitchLine start={[8, 0, -6]} end={[8, 0, 6]} opacity={0.08} />
+
+      {/* Halfway line */}
+      <PitchLine start={[-8, 0, 0]} end={[8, 0, 0]} opacity={0.12} />
+
+      {/* Center circle */}
+      <line geometry={centerCircle}>
+        <lineBasicMaterial {...lineMat} />
+      </line>
+
+      {/* Center spot */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <circleGeometry args={[0.12, 16]} />
+        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.2} />
+      </mesh>
+
+      {/* Penalty box (far end) */}
+      <PitchLine start={[-5, 0, -6]} end={[-5, 0, -10]} opacity={0.07} />
+      <PitchLine start={[5, 0, -6]} end={[5, 0, -10]} opacity={0.07} />
+      <PitchLine start={[-5, 0, -10]} end={[5, 0, -10]} opacity={0.07} />
+
+      {/* Penalty arc */}
+      <line geometry={penaltyArc}>
+        <lineBasicMaterial color="#ED1A3D" transparent opacity={0.06} />
+      </line>
+
+      {/* Goal box (6-yard, far end) */}
+      <PitchLine start={[-2.5, 0, -6]} end={[-2.5, 0, -8]} opacity={0.06} />
+      <PitchLine start={[2.5, 0, -6]} end={[2.5, 0, -8]} opacity={0.06} />
+      <PitchLine start={[-2.5, 0, -8]} end={[2.5, 0, -8]} opacity={0.06} />
+
+      {/* Subtle grass texture — grid lines */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const z = -6 + (i + 1) * (12 / 10);
+        return <PitchLine key={`h${i}`} start={[-8, 0, z]} end={[8, 0, z]} opacity={0.03} />;
+      })}
+    </group>
+  );
+}
+
+const PitchLine = forwardRef<
   THREE.Line,
   { start: [number, number, number]; end: [number, number, number]; opacity: number }
->(function DrawLine({ start, end, opacity }, ref) {
+>(function PitchLine({ start, end, opacity }, ref) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const vertices = new Float32Array([...start, ...end]);
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    geo.computeBoundingSphere();
     return geo;
   }, [start, end]);
 
   return (
     <line ref={ref} geometry={geometry}>
-      <lineDashedMaterial
-        color="#ED1A3D"
-        transparent
-        opacity={opacity}
-        dashSize={0}
-        gapSize={100}
-      />
+      <lineBasicMaterial color="#ED1A3D" transparent opacity={opacity} />
     </line>
   );
 });
 
-/* ─── Soccer Ball (Enhanced) ─────────────────────────────── */
-
-function SoccerBall() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const innerRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (meshRef.current) {
-      meshRef.current.rotation.y = t * 0.15;
-      meshRef.current.rotation.x = Math.sin(t * 0.3) * 0.1;
-      meshRef.current.position.y = Math.sin(t * 0.5) * 0.15;
-    }
-    if (innerRef.current) {
-      innerRef.current.rotation.y = -t * 0.2;
-      innerRef.current.rotation.z = t * 0.1;
-    }
-    if (glowRef.current) {
-      glowRef.current.rotation.y = t * 0.1;
-      const s = 1.8 + Math.sin(t * 2) * 0.1;
-      glowRef.current.scale.setScalar(s);
-    }
-  });
-
-  return (
-    <group position={[2.5, 0.3, -1]}>
-      {/* Main wireframe ball */}
-      <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.4}>
-        <mesh ref={meshRef}>
-          <icosahedronGeometry args={[1.2, 1]} />
-          <meshStandardMaterial
-            color="#F5F5F7"
-            wireframe
-            transparent
-            opacity={0.25}
-          />
-        </mesh>
-      </Float>
-
-      {/* Inner nested sphere — rotates opposite */}
-      <mesh ref={innerRef}>
-        <icosahedronGeometry args={[0.7, 1]} />
-        <meshStandardMaterial
-          color="#ED1A3D"
-          wireframe
-          transparent
-          opacity={0.12}
-        />
-      </mesh>
-
-      {/* Outer glow sphere */}
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[1.4, 32, 32]} />
-        <meshBasicMaterial
-          color="#ED1A3D"
-          transparent
-          opacity={0.04}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      {/* Core energy with distort */}
-      <mesh>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <MeshDistortMaterial
-          color="#ED1A3D"
-          transparent
-          opacity={0.6}
-          distort={0.4}
-          speed={3}
-          roughness={0}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/* ─── Rising Particles ───────────────────────────────────── */
+/* ─── Rising Particles (like smoke/flares from the stands) ── */
 
 function RisingParticles({ count }: { count: number }) {
   const meshRef = useRef<THREE.Points>(null);
@@ -362,7 +338,7 @@ function RisingParticles({ count }: { count: number }) {
   }, [count]);
 
   const speeds = useMemo(() => {
-    return Array.from({ length: count }, () => 0.2 + Math.random() * 0.5);
+    return Array.from({ length: count }, () => 0.15 + Math.random() * 0.4);
   }, [count]);
 
   useFrame(({ clock }) => {
@@ -372,7 +348,7 @@ function RisingParticles({ count }: { count: number }) {
 
     for (let i = 0; i < count; i++) {
       posArray[i * 3 + 1] += speeds[i] * 0.003;
-      posArray[i * 3] += Math.sin(t * 0.5 + i) * 0.001;
+      posArray[i * 3] += Math.sin(t * 0.4 + i * 0.7) * 0.0008;
       if (posArray[i * 3 + 1] > 6) {
         posArray[i * 3 + 1] = -4;
       }
@@ -394,124 +370,14 @@ function RisingParticles({ count }: { count: number }) {
         color="#ED1A3D"
         size={0.03}
         transparent
-        opacity={0.4}
+        opacity={0.35}
         sizeAttenuation
       />
     </points>
   );
 }
 
-/* ─── Orbiting Particles ─────────────────────────────────── */
-
-function OrbitingParticles({ count }: { count: number }) {
-  const meshRef = useRef<THREE.Points>(null);
-
-  const orbits = useMemo(() => {
-    return Array.from({ length: count }, () => ({
-      radiusX: 1.8 + Math.random() * 2.5,
-      radiusZ: 1.2 + Math.random() * 2.0,
-      speed: 0.2 + Math.random() * 0.4,
-      offset: Math.random() * Math.PI * 2,
-      yOffset: (Math.random() - 0.5) * 1.5,
-    }));
-  }, [count]);
-
-  const positions = useMemo(() => new Float32Array(count * 3), [count]);
-
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-    const t = clock.getElapsedTime();
-    const posArray = meshRef.current.geometry.attributes.position.array as Float32Array;
-
-    for (let i = 0; i < count; i++) {
-      const orb = orbits[i];
-      const angle = t * orb.speed + orb.offset;
-      // Ball center offset
-      posArray[i * 3] = 2.5 + Math.cos(angle) * orb.radiusX;
-      posArray[i * 3 + 1] = 0.3 + orb.yOffset + Math.sin(t * 0.3 + i) * 0.2;
-      posArray[i * 3 + 2] = -1 + Math.sin(angle) * orb.radiusZ;
-    }
-    meshRef.current.geometry.attributes.position.needsUpdate = true;
-  });
-
-  if (count === 0) return null;
-
-  return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        color="#FF4D6A"
-        size={0.04}
-        transparent
-        opacity={0.5}
-        sizeAttenuation
-      />
-    </points>
-  );
-}
-
-/* ─── Energy Rings (one 270° arc) ────────────────────────── */
-
-function EnergyRings({ showThird }: { showThird: boolean }) {
-  const ring1Ref = useRef<THREE.Mesh>(null);
-  const ring2Ref = useRef<THREE.Mesh>(null);
-  const ring3Ref = useRef<THREE.Line>(null);
-
-  // 270° arc geometry for the 3rd ring
-  const arcGeometry = useMemo(() => {
-    const points: THREE.Vector3[] = [];
-    const segments = 80;
-    const arcAngle = (270 / 360) * Math.PI * 2;
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * arcAngle;
-      points.push(new THREE.Vector3(Math.cos(angle) * 3, Math.sin(angle) * 3, 0));
-    }
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, []);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (ring1Ref.current) {
-      ring1Ref.current.rotation.x = t * 0.2;
-      ring1Ref.current.rotation.z = t * 0.1;
-    }
-    if (ring2Ref.current) {
-      ring2Ref.current.rotation.y = t * 0.15;
-      ring2Ref.current.rotation.x = t * 0.08;
-    }
-    if (ring3Ref.current) {
-      ring3Ref.current.rotation.z = t * 0.12;
-      ring3Ref.current.rotation.y = -t * 0.06;
-    }
-  });
-
-  return (
-    <group position={[2.5, 0.3, -1]}>
-      <mesh ref={ring1Ref}>
-        <torusGeometry args={[2, 0.008, 16, 100]} />
-        <meshBasicMaterial color="#ED1A3D" transparent opacity={0.12} />
-      </mesh>
-      <mesh ref={ring2Ref}>
-        <torusGeometry args={[2.5, 0.006, 16, 100]} />
-        <meshBasicMaterial color="#FF4D6A" transparent opacity={0.08} />
-      </mesh>
-      {showThird && (
-        <line ref={ring3Ref} geometry={arcGeometry}>
-          <lineBasicMaterial color="#ED1A3D" transparent opacity={0.05} />
-        </line>
-      )}
-    </group>
-  );
-}
-
-/* ─── Camera Rig (mouse-track or auto-orbit) ─────────────── */
+/* ─── Camera Rig ─────────────────────────────────────────── */
 
 function CameraRig({ mouseTrack }: { mouseTrack: boolean }) {
   const { camera } = useThree();
@@ -529,17 +395,16 @@ function CameraRig({ mouseTrack }: { mouseTrack: boolean }) {
 
   useFrame(({ clock }) => {
     if (mouseTrack) {
-      const targetX = mousePos.current.x * 0.8;
-      const targetY = -mousePos.current.y * 0.4 + 0.5;
+      const targetX = mousePos.current.x * 1.0;
+      const targetY = -mousePos.current.y * 0.5 + 1.0;
       camera.position.x += (targetX - camera.position.x) * 0.02;
       camera.position.y += (targetY - camera.position.y) * 0.02;
     } else {
-      // Auto-orbit for mobile
       const t = clock.getElapsedTime();
-      camera.position.x = Math.sin(t * 0.15) * 0.6;
-      camera.position.y = 0.5 + Math.sin(t * 0.1) * 0.15;
+      camera.position.x = Math.sin(t * 0.12) * 0.8;
+      camera.position.y = 1.0 + Math.sin(t * 0.08) * 0.2;
     }
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, 0.3, -1);
   });
 
   return null;
@@ -550,33 +415,35 @@ function CameraRig({ mouseTrack }: { mouseTrack: boolean }) {
 function Scene({ config }: { config: TierConfig }) {
   return (
     <>
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 5, 5]} intensity={0.5} color="#F5F5F7" />
-      <pointLight position={[2.5, 1, 0]} intensity={1} color="#ED1A3D" distance={8} decay={2} />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 8, 5]} intensity={0.4} color="#F5F5F7" />
+      {/* Red spotlight on the crest — like a floodlight */}
+      <pointLight position={[0, 3, 2]} intensity={1.5} color="#ED1A3D" distance={10} decay={2} />
+      {/* Cool fill from behind */}
+      <pointLight position={[0, 2, -4]} intensity={0.5} color="#557AB2" distance={8} decay={2} />
 
-      {config.hexGround && <HexGround />}
-      <PitchGrid />
+      <SoccerPitch />
+      {config.goalFrame && <GoalFrame />}
+      <RBNYCrest />
       <SoccerBall />
-      <EnergyRings showThird={config.thirdRing} />
       <RisingParticles count={config.risingParticles} />
-      <OrbitingParticles count={config.orbitingParticles} />
 
       <Sparkles
         count={config.sparkles}
         scale={15}
         size={1.5}
-        speed={0.3}
-        opacity={0.15}
+        speed={0.25}
+        opacity={0.12}
         color="#ED1A3D"
       />
 
       <CameraRig mouseTrack={config.mouseTrack} />
-      <fog attach="fog" args={['#0A0A0C', 6, 18]} />
+      <fog attach="fog" args={['#0A0A0C', 8, 20]} />
 
       {config.bloom && (
         <EffectComposer>
           <Bloom
-            luminanceThreshold={0.2}
+            luminanceThreshold={0.15}
             luminanceSmoothing={0.9}
             intensity={config.bloomIntensity}
           />
@@ -599,7 +466,7 @@ export function SoccerScene() {
   return (
     <div className="absolute inset-0 z-[1]">
       <Canvas
-        camera={{ position: [0, 0.5, 8], fov: 45, near: 0.1, far: 50 }}
+        camera={{ position: [0, 1, 8], fov: 42, near: 0.1, far: 50 }}
         dpr={config.dpr}
         gl={{
           antialias: config.antialias,
