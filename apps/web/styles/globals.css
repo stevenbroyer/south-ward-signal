@@ -2,12 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Matchday Noir — shadcn/ui CSS Variables ────────────── */
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 240 7% 97%;
+    --card: 240 8% 7%;
+    --card-foreground: 240 7% 97%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 240 7% 97%;
+    --primary: 350 86% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 39 55% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 5% 52%;
+    --accent: 348 100% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 350 86% 52%;
+    --radius: 0.5rem;
+  }
+}
+
 /* ─── Base Reset ──────────────────────────────────────────── */
 
 @layer base {
   * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    @apply border-border;
   }
 
   html {
@@ -18,8 +46,8 @@
 
   body {
     font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #0A0A0C;
     overflow-x: hidden;
+    @apply bg-background text-foreground;
   }
 
   ::selection {
@@ -299,4 +327,3 @@
     scroll-behavior: auto !important;
   }
 }
-
