@@ -1,6 +1,7 @@
 import { Hero } from '@/components/hero/Hero';
 import { LatestSection } from './sections/LatestSection';
 import { DataRoomPreview } from './sections/DataRoomPreview';
+import { SocialPreview } from './sections/SocialPreview';
 import { AboutPreview } from './sections/AboutPreview';
 import { getLatestArticles } from '@/lib/ghost';
 import { getLatestMatch, getStandings } from '@/lib/supabase';
@@ -29,6 +30,7 @@ export default async function HomePage() {
       <Hero />
       <LatestSection articles={normalizedArticles} />
       <DataRoomPreview matchData={latestMatch} standingsData={standings} />
+      <SocialPreview />
       <AboutPreview />
     </>
   );
