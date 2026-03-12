@@ -11,7 +11,7 @@
   }
 
   html {
-    scroll-behavior: auto; /* Lenis handles smooth scroll */
+    scroll-behavior: smooth;
     background-color: #0A0A0C;
     color: #F5F5F7;
   }
@@ -300,20 +300,3 @@
   }
 }
 
-/* ─── Lenis Smooth Scroll ─────────────────────────────────── */
-
-html.lenis, html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
-}

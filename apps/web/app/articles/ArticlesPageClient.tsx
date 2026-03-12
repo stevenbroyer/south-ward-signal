@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArticleCard } from '@/components/articles/ArticleCard';
 import { FeaturedArticle } from '@/components/articles/FeaturedArticle';
 import { ArticleGrid } from '@/components/articles/ArticleGrid';

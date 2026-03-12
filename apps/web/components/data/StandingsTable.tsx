@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import Image from 'next/image';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView } from 'motion/react';
 import { FormBadge } from './FormBadge';
 
 type FormResult = 'W' | 'D' | 'L';

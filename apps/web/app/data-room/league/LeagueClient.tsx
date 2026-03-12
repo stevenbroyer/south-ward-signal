@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import Image from 'next/image';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView } from 'motion/react';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { BumpChart } from '@/components/data/BumpChart';
 import { XgScatter } from '@/components/data/XgScatter';

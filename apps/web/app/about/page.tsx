@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 
 const coverageTypes = [

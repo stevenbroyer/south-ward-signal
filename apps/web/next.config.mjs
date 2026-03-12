@@ -15,7 +15,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'recharts', 'date-fns'],
+    optimizePackageImports: ['motion', 'recharts', 'date-fns'],
     viewTransition: true,
   },
 };

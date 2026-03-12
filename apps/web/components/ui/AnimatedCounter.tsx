@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { gsap } from 'gsap';
+import { animate } from 'motion';
 
 interface AnimatedCounterProps {
   value: number;
@@ -32,14 +32,12 @@ export function AnimatedCounter({
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
-          const obj = { val: 0 };
-          gsap.to(obj, {
-            val: value,
+          animate(0, value, {
             duration,
-            ease: 'power4.out',
-            onUpdate: () => {
+            ease: [0.76, 0, 0.24, 1],
+            onUpdate: (latest) => {
               setDisplay(
-                `${prefix}${obj.val.toLocaleString('en-US', {
+                `${prefix}${latest.toLocaleString('en-US', {
                   minimumFractionDigits: decimals,
                   maximumFractionDigits: decimals,
                 })}${suffix}`

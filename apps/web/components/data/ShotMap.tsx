@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface Shot {
   x: number; // 0-100 (percentage of half-pitch width)
