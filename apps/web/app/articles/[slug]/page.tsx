@@ -4,6 +4,9 @@ import { getArticleBySlug, getLatestArticles, getAllSlugs } from '@/lib/ghost';
 import { TagBadge } from '@/components/articles/TagBadge';
 import { ArticleRow } from '@/components/articles/ArticleRow';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
+import { ReadingProgress } from '@/components/articles/ReadingProgress';
+import { TableOfContents } from '@/components/articles/TableOfContents';
+import { SocialShare } from '@/components/articles/SocialShare';
 
 export const revalidate = 60;
 
@@ -26,6 +29,16 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       images: article.feature_image ? [article.feature_image] : [],
     },
   };
+}
+
+/** Inject id attributes into h2/h3 tags for deep linking and ToC navigation */
+function addHeadingIds(html: string): string {
+  let counter = 0;
+  return html.replace(/<(h[23])(.*?)>(.*?)<\/h[23]>/gi, (match, tag, attrs, content) => {
+    const text = content.replace(/<[^>]*>/g, '');
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `heading-${counter++}`;
+    return `<${tag}${attrs} id="${id}">${content}</${tag}>`;
+  });
 }
 
 export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
@@ -53,8 +66,12 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
     year: 'numeric', month: 'long', day: 'numeric',
   });
 
+  const articleHtml = article.html ? addHeadingIds(article.html) : '';
+
   return (
     <div className="min-h-screen pt-24 pb-20">
+      <ReadingProgress />
+
       <div className="max-w-container mx-auto px-6">
         {/* Breadcrumb */}
         <RevealOnScroll>
@@ -67,7 +84,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
           </nav>
         </RevealOnScroll>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_240px] gap-12">
           {/* Main Content */}
           <article>
             <RevealOnScroll>
@@ -81,10 +98,14 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
                 {article.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm font-mono text-sws-500 mb-8">
-                <time>{date}</time>
+              <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-sws-500 mb-8">
+                <div className="flex items-center gap-4">
+                  <time>{date}</time>
+                  <span className="w-1 h-1 rounded-full bg-sws-600" />
+                  <span>{article.reading_time || 5} min read</span>
+                </div>
                 <span className="w-1 h-1 rounded-full bg-sws-600" />
-                <span>{article.reading_time || 5} min read</span>
+                <SocialShare title={article.title} slug={params.slug} />
               </div>
             </RevealOnScroll>
 
@@ -105,7 +126,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
             <RevealOnScroll>
               <div
                 className="article-content max-w-narrow"
-                dangerouslySetInnerHTML={{ __html: article.html }}
+                dangerouslySetInnerHTML={{ __html: articleHtml }}
               />
             </RevealOnScroll>
 
@@ -132,11 +153,26 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
                 </div>
               </div>
             </RevealOnScroll>
+
+            {/* Related Coverage (visible on smaller screens where sidebar is hidden) */}
+            <div className="xl:hidden mt-12">
+              <RevealOnScroll>
+                <div className="bg-bg-card border border-sws-700/50 rounded-xl p-5">
+                  <h3 className="text-xs font-mono text-sws-500 uppercase tracking-widest mb-4">Related Coverage</h3>
+                  <div className="space-y-0">
+                    {related.map((ra) => (
+                      <ArticleRow key={ra.slug} {...ra} />
+                    ))}
+                  </div>
+                </div>
+              </RevealOnScroll>
+            </div>
           </article>
 
-          {/* Sidebar */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-24">
+          {/* Sidebar (XL screens) */}
+          <aside className="hidden xl:block">
+            <div className="sticky top-24 space-y-8">
+              <TableOfContents html={article.html || ''} />
               <RevealOnScroll direction="right" delay={0.2}>
                 <div className="bg-bg-card border border-sws-700/50 rounded-xl p-5">
                   <h3 className="text-xs font-mono text-sws-500 uppercase tracking-widest mb-4">Related Coverage</h3>
