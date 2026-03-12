@@ -12,7 +12,8 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const article = await getArticleBySlug(params.slug);
   if (!article) return { title: 'Article Not Found — South Ward Signal' };
 
@@ -27,7 +28,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
+export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const article = await getArticleBySlug(params.slug);
 
   if (!article) {

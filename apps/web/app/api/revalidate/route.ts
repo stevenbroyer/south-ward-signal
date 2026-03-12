@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (type === 'tag' && tag) {
-      revalidateTag(tag);
+      revalidateTag(tag, { expire: 0 });
       return NextResponse.json({ revalidated: true, tag });
     }
 
