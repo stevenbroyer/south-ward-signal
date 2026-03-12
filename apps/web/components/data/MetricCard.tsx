@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
+import { MetricTooltip } from '@/components/data/MetricTooltip';
 
 interface MetricCardProps {
   label: string;
@@ -10,6 +11,8 @@ interface MetricCardProps {
   decimals?: number;
   trend?: 'up' | 'down' | 'neutral';
   className?: string;
+  /** Explicit metric definition key. If omitted, the label is used for auto-lookup. */
+  metricKey?: string;
 }
 
 export function MetricCard({
@@ -20,10 +23,17 @@ export function MetricCard({
   decimals = 0,
   trend,
   className = '',
+  metricKey,
 }: MetricCardProps) {
+  const resolvedKey = metricKey || label;
+
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-lg p-5 ${className}`}>
-      <p className="text-xs font-mono text-sws-400 uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-xs font-mono text-sws-400 uppercase tracking-widest mb-2">
+        <MetricTooltip metricKey={resolvedKey}>
+          <span>{label}</span>
+        </MetricTooltip>
+      </p>
       <div className="flex items-end gap-2">
         <AnimatedCounter
           value={value}
