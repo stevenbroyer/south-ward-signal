@@ -172,6 +172,15 @@
     background: linear-gradient(90deg, #ED1A3D 0%, rgba(237,26,61,0.3) 60%, transparent 100%);
   }
 
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Red stripe accent for section headers */
   .red-stripe {
     position: relative;
