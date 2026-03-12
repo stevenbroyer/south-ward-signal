@@ -6,16 +6,14 @@ export const revalidate = 60;
 export default async function MatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; result?: string; home?: string }>;
+  searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2025;
-  const filters = {
-    result: params?.result || undefined,
-    home: params?.home === 'true' ? true : params?.home === 'false' ? false : undefined,
-  };
+  const season = Number(params?.season) || 2024;
 
-  const matches = await getMatchList(season, filters);
+  // Fetch unfiltered matches for initial server render.
+  // Client-side TanStack Query handles result/venue filtering instantly.
+  const matches = await getMatchList(season);
 
-  return <MatchListClient matches={matches} currentFilters={filters} />;
+  return <MatchListClient matches={matches} initialSeason={season} />;
 }

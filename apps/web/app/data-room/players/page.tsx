@@ -1,36 +1,19 @@
 import { getPlayerList } from '@/lib/data-room-queries';
-import { PlayerStatsTable } from '@/components/data/PlayerStatsTable';
-import Link from 'next/link';
+import { PlayersClient } from './PlayersClient';
 
 export const revalidate = 60;
 
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; position?: string; sort?: string }>;
+  searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2025;
-  const players = await getPlayerList(season, {
-    position: params?.position,
-    sort: params?.sort,
-  });
+  const season = Number(params?.season) || 2024;
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xs font-mono text-sws-500 uppercase tracking-widest">
-          Squad ({players.length} players)
-        </h2>
-        <Link
-          href="/data-room/players/compare"
-          className="text-xs font-mono text-red hover:text-red/80 transition-colors"
-        >
-          Compare Players →
-        </Link>
-      </div>
+  // Fetch all players (no position filter) for initial server render.
+  // Client-side TanStack Query handles position filtering instantly.
+  const players = await getPlayerList(season);
 
-      <PlayerStatsTable players={players} />
-    </div>
-  );
+  return <PlayersClient players={players} initialSeason={season} />;
 }

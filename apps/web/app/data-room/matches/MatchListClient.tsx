@@ -1,6 +1,9 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { fetchMatches, type MatchFilters } from '@/lib/data-room-api';
 import { MatchCard } from '@/components/data/MatchCard';
 
 interface Match {
@@ -18,7 +21,7 @@ interface Match {
 
 interface MatchListClientProps {
   matches: Match[];
-  currentFilters: { result?: string; home?: boolean };
+  initialSeason: number;
 }
 
 const RESULT_FILTERS = [
@@ -34,20 +37,25 @@ const VENUE_FILTERS = [
   { label: 'Away', value: 'false' },
 ];
 
-export function MatchListClient({ matches, currentFilters }: MatchListClientProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+export function MatchListClient({ matches: initialMatches, initialSeason }: MatchListClientProps) {
   const searchParams = useSearchParams();
+  const season = Number(searchParams.get('season')) || initialSeason;
 
-  const setFilter = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    router.push(`${pathname}?${params.toString()}`);
+  const [resultFilter, setResultFilter] = useState('');
+  const [venueFilter, setVenueFilter] = useState('');
+
+  const filters: MatchFilters = {
+    season,
+    result: resultFilter || undefined,
+    home: venueFilter || undefined,
   };
+
+  const { data: matches = [], isFetching } = useQuery<Match[]>({
+    queryKey: ['matches', filters],
+    queryFn: () => fetchMatches(filters),
+    initialData: resultFilter === '' && venueFilter === '' ? initialMatches : undefined,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const finished = matches.filter((m) => m.status === 'finished');
   const upcoming = matches.filter((m) => m.status !== 'finished');
@@ -60,9 +68,9 @@ export function MatchListClient({ matches, currentFilters }: MatchListClientProp
           {RESULT_FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setFilter('result', f.value)}
+              onClick={() => setResultFilter(f.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-                (currentFilters.result || '') === f.value
+                resultFilter === f.value
                   ? 'bg-red/10 text-red border border-red/20'
                   : 'text-sws-400 hover:text-sws-200 border border-sws-700/30 hover:border-sws-600'
               }`}
@@ -75,9 +83,9 @@ export function MatchListClient({ matches, currentFilters }: MatchListClientProp
           {VENUE_FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setFilter('home', f.value)}
+              onClick={() => setVenueFilter(f.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-                String(currentFilters.home ?? '') === f.value
+                venueFilter === f.value
                   ? 'bg-red/10 text-red border border-red/20'
                   : 'text-sws-400 hover:text-sws-200 border border-sws-700/30 hover:border-sws-600'
               }`}
@@ -86,6 +94,14 @@ export function MatchListClient({ matches, currentFilters }: MatchListClientProp
             </button>
           ))}
         </div>
+
+        {/* Loading indicator */}
+        {isFetching && (
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="w-3 h-3 border border-red/40 border-t-red rounded-full animate-spin" />
+            <span className="text-xs font-mono text-sws-500">Loading...</span>
+          </div>
+        )}
       </div>
 
       {/* Upcoming */}
@@ -136,7 +152,7 @@ export function MatchListClient({ matches, currentFilters }: MatchListClientProp
         ))}
       </div>
 
-      {!matches.length && (
+      {!matches.length && !isFetching && (
         <div className="text-center py-16 text-sws-500 font-mono text-sm">
           No matches found for the selected filters.
         </div>
