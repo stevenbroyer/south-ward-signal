@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { fraunces, sourceSans, jetbrainsMono } from '@/lib/fonts';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { QueryProvider } from '@/lib/query-provider';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -53,14 +54,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {isAdmin ? (
           <main className="min-h-screen">{children}</main>
         ) : (
-          <>
+          <QueryProvider>
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-red focus:text-white focus:rounded">
               Skip to content
             </a>
             <Navbar />
             <main id="main-content" className="min-h-screen">{children}</main>
             <Footer />
-          </>
+          </QueryProvider>
         )}
       </body>
     </html>

@@ -1,13 +1,35 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
+
+export type { Database };
+export type { Tables, InsertTables, UpdateTables } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const isConfigured = !!(supabaseUrl && supabaseKey);
 
+/**
+ * Untyped client for existing query functions (avoids `never` inference
+ * issues with supabase-js v2's PostgREST generic chain).
+ *
+ * For type-safe queries in new code, import `typedSupabase` instead
+ * or use the `Tables<'tableName'>` helper from `@/types/database`.
+ */
 export const supabase: SupabaseClient = isConfigured
   ? createClient(supabaseUrl, supabaseKey)
   : (null as unknown as SupabaseClient);
+
+/**
+ * Typed client — use for new queries where you want full
+ * type inference on `.from('table').select('*')` chains.
+ * May produce `never` when chaining multiple `.eq()` filters
+ * with column subsets; fall back to `supabase` + explicit
+ * `Tables<'...'>` type assertions in those cases.
+ */
+export const typedSupabase = isConfigured
+  ? createClient<Database>(supabaseUrl, supabaseKey)
+  : (null as unknown as ReturnType<typeof createClient<Database>>);
 
 const EMPTY_METRICS = {
   xgPerMatch: 0, points: 0, goalDifference: 0, ppda: 0,
@@ -17,23 +39,33 @@ const EMPTY_METRICS = {
 
 export async function getLatestMatch() {
   if (!isConfigured) return null;
-  const { data } = await supabase
-    .from('matches')
-    .select('*')
-    .order('date', { ascending: false })
-    .limit(1)
-    .single();
-  return data;
+  try {
+    const { data } = await supabase
+      .from('matches')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(1)
+      .single();
+    return data;
+  } catch (err) {
+    console.error('[getLatestMatch]', err);
+    return null;
+  }
 }
 
 export async function getStandings(conference = 'Eastern') {
   if (!isConfigured) return [];
-  const { data } = await supabase
-    .from('standings')
-    .select('*')
-    .eq('conference', conference)
-    .order('position', { ascending: true });
-  return data || [];
+  try {
+    const { data } = await supabase
+      .from('standings')
+      .select('*')
+      .eq('conference', conference)
+      .order('position', { ascending: true });
+    return data || [];
+  } catch (err) {
+    console.error('[getStandings]', err);
+    return [];
+  }
 }
 
 export async function getPlayerStats(team = 'New York Red Bulls') {
@@ -59,6 +91,7 @@ export async function getRecentMatches(limit = 5) {
 export async function getTeamSeasonMetrics(team = 'New York Red Bulls') {
   if (!isConfigured) return EMPTY_METRICS;
 
+  try {
   const [matchesRes, standingsRes, playersRes] = await Promise.all([
     supabase
       .from('matches')
@@ -134,4 +167,8 @@ export async function getTeamSeasonMetrics(team = 'New York Red Bulls') {
     tacklesWon: totalTacklesWon,
     interceptionsPer90: +(totalInterceptions / (matchCount)).toFixed(1),
   };
+  } catch (err) {
+    console.error('[getTeamSeasonMetrics]', err);
+    return EMPTY_METRICS;
+  }
 }
