@@ -66,7 +66,7 @@ export function Navbar() {
               </NavLink>
             ))}
             <Link
-              href="/#subscribe"
+              href="/newsletter"
               className="px-4 py-2 bg-red text-white text-sm font-semibold rounded hover:bg-accent transition-colors duration-200"
             >
               Subscribe
@@ -102,7 +102,7 @@ export function Navbar() {
                 ))}
                 <div className="border-t border-sws-600 pt-6 mt-2">
                   <Link
-                    href="/#subscribe"
+                    href="/newsletter"
                     className="inline-block px-6 py-3 bg-red text-white font-semibold rounded text-lg w-full text-center hover:bg-accent transition-colors"
                   >
                     Subscribe Free
