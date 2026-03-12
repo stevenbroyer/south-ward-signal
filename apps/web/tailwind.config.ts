@@ -12,6 +12,7 @@ const config: Config = {
           DEFAULT: '#0A0A0C',
           card: '#111114',
           elevated: '#18181C',
+          surface: '#1F1F25',
         },
         red: {
           DEFAULT: '#ED1A3D',
@@ -20,17 +21,22 @@ const config: Config = {
         },
         accent: '#FF4D6A',
         gold: '#D4A843',
+        blue: {
+          DEFAULT: '#557AB2',
+          muted: 'rgba(85, 122, 178, 0.15)',
+        },
         sws: {
           white: '#F5F5F7',
           100: '#E8E8EC',
           200: '#C8C8D0',
           300: '#A0A0AC',
-          400: '#6E6E7A',
-          500: '#44444F',
+          400: '#7F7F8B',
+          500: '#5D5D6B',
           600: '#2A2A32',
           700: '#1E1E24',
         },
         success: '#22C55E',
+        warning: '#F59E0B',
       },
       fontFamily: {
         display: ['var(--font-fraunces)', 'serif'],
