@@ -1,19 +1,24 @@
 import { Hero } from '@/components/hero/Hero';
+import { MatchDayBanner } from '@/components/match-day/MatchDayBanner';
 import { LatestSection } from './sections/LatestSection';
 import { DataRoomPreview } from './sections/DataRoomPreview';
 import { SocialPreview } from './sections/SocialPreview';
 import { AboutPreview } from './sections/AboutPreview';
 import { getLatestArticles } from '@/lib/ghost';
-import { getLatestMatch, getStandings } from '@/lib/supabase';
+import { getLatestMatch, getNextScheduledMatch, getStandings } from '@/lib/supabase';
+import { getMatchDayState } from '@/lib/match-day';
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [articles, latestMatch, standings] = await Promise.all([
+  const [articles, latestMatch, nextMatch, standings] = await Promise.all([
     getLatestArticles(5),
     getLatestMatch(),
+    getNextScheduledMatch(),
     getStandings('Eastern'),
   ]);
+
+  const matchDayContext = getMatchDayState(nextMatch, latestMatch);
 
   const normalizedArticles = articles.map((a) => ({
     slug: a.slug,
@@ -28,6 +33,9 @@ export default async function HomePage() {
   return (
     <>
       <Hero />
+      {matchDayContext.state !== 'OFF_DAY' && (
+        <MatchDayBanner context={matchDayContext} />
+      )}
       <LatestSection articles={normalizedArticles} />
       <DataRoomPreview matchData={latestMatch} standingsData={standings} />
       <SocialPreview />

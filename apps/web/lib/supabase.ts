@@ -68,6 +68,23 @@ export async function getStandings(conference = 'Eastern') {
   }
 }
 
+export async function getNextScheduledMatch() {
+  if (!isConfigured) return null;
+  try {
+    const { data } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('status', 'scheduled')
+      .gte('date', new Date().toISOString())
+      .order('date', { ascending: true })
+      .limit(1)
+      .single();
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export async function getPlayerStats(team = 'New York Red Bulls') {
   if (!isConfigured) return [];
   const { data } = await supabase
