@@ -17,7 +17,7 @@ export interface MatchDayContext {
   hoursOffset: number;
 }
 
-interface MatchInput {
+export interface MatchInput {
   id: string;
   date: string;
   home_team: string;
@@ -25,7 +25,7 @@ interface MatchInput {
   home_score: number | null;
   away_score: number | null;
   venue: string | null;
-  competition: string;
+  competition?: string;
   status: string;
 }
 
@@ -95,7 +95,7 @@ function mapMatch(m: MatchInput) {
     awayScore: m.away_score,
     date: m.date,
     venue: m.venue || 'Red Bull Arena',
-    competition: m.competition,
+    competition: m.competition || 'MLS',
     status: m.status,
   };
 }

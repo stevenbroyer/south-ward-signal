@@ -68,28 +68,6 @@ function deriveOutcome(shot: any): string {
 
 // ── Build lookups ──────────────────────────────────────────────────────────
 
-async function buildPlayerNameLookup(): Promise<Map<string, string>> {
-  console.log("[LOOKUP] Building player name lookup...");
-  const nameMap = new Map<string, string>();
-  let offset = 0;
-  const pageSize = 1000;
-
-  while (true) {
-    const batch: any[] = await fetchJSON(
-      `${ASA_BASE}/mls/players?offset=${offset}&limit=${pageSize}`
-    );
-    for (const p of batch) {
-      nameMap.set(p.player_id, p.player_name || "Unknown");
-    }
-    if (batch.length < pageSize) break;
-    offset += pageSize;
-    await delay(500);
-  }
-
-  console.log(`[LOOKUP] Player lookup: ${nameMap.size} players indexed.`);
-  return nameMap;
-}
-
 async function buildTeamNameLookup(): Promise<Map<string, string>> {
   console.log("[LOOKUP] Building team name lookup...");
   const teams: any[] = await fetchJSON(`${ASA_BASE}/mls/teams`);
@@ -185,7 +163,7 @@ async function main() {
         const shotRecords = shots.map((s: any) => ({
           match_id: matchId,
           team: teamNames.get(s.team_id) || s.team_id,
-          player: s.shooter_player_name || playerNames.get(s.shooter_player_id) || 'Unknown',
+          player: s.shooter_player_name || 'Unknown',
           minute: s.game_minute || s.expanded_minute || 0,
           x: s.shot_location_x || 0,
           y: s.shot_location_y || 0,

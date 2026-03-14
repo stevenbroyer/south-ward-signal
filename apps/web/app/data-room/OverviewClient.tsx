@@ -53,14 +53,14 @@ interface LegacyMetrics {
 
 interface TopPerformer {
   name: string;
-  position: string;
+  position: string | null;
   goals: number;
   assists: number;
   xg: number;
   goals_added: number;
   minutes: number;
   games_played: number;
-  image_url?: string;
+  image_url?: string | null;
 }
 
 interface OverviewClientProps {
@@ -88,8 +88,8 @@ export function OverviewClient({
   const pts = metrics.points || legacyMetrics.points;
   const ppg = metrics.ppg || (legacyMetrics.points && legacyMetrics.xgPerMatch ? +(legacyMetrics.points / Math.max(metrics.gamesPlayed, 1)).toFixed(2) : 0);
   const xgDiff = metrics.xgDiff || 0;
-  const ga = metrics.goalsAdded || 0;
-  const form = metrics.form;
+  const gd = metrics.goalsFor - metrics.goalsAgainst;
+  const form = metrics.form || [];
   const rank = metrics.confRank;
 
   return (
@@ -97,10 +97,10 @@ export function OverviewClient({
       {/* Hero Metric Cards */}
       <RevealOnScroll>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <MetricCard label="Points" value={pts} trend="up" />
-          <MetricCard label="PPG" value={ppg} decimals={2} trend={ppg > 1.5 ? 'up' : 'neutral'} />
-          <MetricCard label="xG Diff" value={xgDiff} decimals={1} prefix={xgDiff > 0 ? '+' : ''} trend={xgDiff > 0 ? 'up' : 'down'} />
-          <MetricCard label="Goals Added" value={ga} decimals={1} prefix={ga > 0 ? '+' : ''} trend={ga > 0 ? 'up' : 'down'} />
+          <MetricCard label="Points" value={pts} trend={pts > 0 ? 'up' : undefined} />
+          <MetricCard label="PPG" value={ppg} decimals={2} trend={ppg > 1.5 ? 'up' : undefined} />
+          <MetricCard label="xG Diff" value={xgDiff} decimals={1} prefix={xgDiff > 0 ? '+' : ''} trend={xgDiff > 0 ? 'up' : xgDiff < 0 ? 'down' : undefined} />
+          <MetricCard label="Goal Diff" value={gd} prefix={gd > 0 ? '+' : ''} trend={gd > 0 ? 'up' : gd < 0 ? 'down' : undefined} />
           <MetricCard
             label="Form"
             value={form.filter((f) => f === 'W').length}
@@ -177,12 +177,8 @@ export function OverviewClient({
                 <div className="flex gap-4 mt-3 text-xs font-mono text-sws-400">
                   <span>{p.goals}G</span>
                   <span>{p.assists}A</span>
-                  <span>{Number(p.xg).toFixed(1)} xG</span>
-                  {p.goals_added != null && (
-                    <span className={Number(p.goals_added) > 0 ? 'text-success' : 'text-red'}>
-                      {Number(p.goals_added) > 0 ? '+' : ''}{Number(p.goals_added).toFixed(1)} G+
-                    </span>
-                  )}
+                  <span>{p.games_played} GP</span>
+                  <span>{p.minutes} min</span>
                 </div>
               </Link>
             ))}

@@ -43,19 +43,10 @@ function MarketValueTooltip({ active, payload }: any) {
   );
 }
 
-const SAMPLE_DATA: MarketValueEntry[] = [
-  { date: '2022-06-01', value: 500_000, team: 'New York Red Bulls' },
-  { date: '2022-12-01', value: 750_000, team: 'New York Red Bulls' },
-  { date: '2023-06-01', value: 1_200_000, team: 'New York Red Bulls' },
-  { date: '2023-12-01', value: 1_800_000, team: 'New York Red Bulls' },
-  { date: '2024-06-01', value: 2_500_000, team: 'New York Red Bulls' },
-  { date: '2024-12-01', value: 3_000_000, team: 'New York Red Bulls' },
-  { date: '2025-06-01', value: 3_500_000, team: 'New York Red Bulls' },
-];
 
 export function MarketValueChart({
-  playerName = 'Lewis Morgan',
-  data = SAMPLE_DATA,
+  playerName = '',
+  data = [],
   className = '',
 }: MarketValueChartProps) {
   if (!data.length) {

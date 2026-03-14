@@ -8,6 +8,6 @@ export async function GET(request: Request) {
   const homeParam = searchParams.get('home');
   const home = homeParam === 'true' ? true : homeParam === 'false' ? false : undefined;
 
-  const matches = await getMatchList(season, { result, home });
+  const matches = await getMatchList(season);
   return NextResponse.json(matches);
 }

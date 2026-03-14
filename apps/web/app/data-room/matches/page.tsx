@@ -9,7 +9,7 @@ export default async function MatchesPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2024;
+  const season = Number(params?.season) || 2026;
 
   // Fetch unfiltered matches for initial server render.
   // Client-side TanStack Query handles result/venue filtering instantly.

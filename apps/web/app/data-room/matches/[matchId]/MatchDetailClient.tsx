@@ -150,25 +150,22 @@ export function MatchDetailClient({
         </div>
       </RevealOnScroll>
 
-      {/* xG Timeline & Shot Map */}
-      <RevealOnScroll>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {xgTimeline ? (
-            <XGTimeline
-              data={xgTimeline}
-              goals={goals}
-              homeLabel={match.homeTeam.split(' ').pop() || 'Home'}
-              awayLabel={match.awayTeam.split(' ').pop() || 'Away'}
-            />
-          ) : (
-            <XGTimeline
-              homeLabel={match.homeTeam.split(' ').pop() || 'Home'}
-              awayLabel={match.awayTeam.split(' ').pop() || 'Away'}
-            />
-          )}
-          {nyrbShots.length > 0 ? <ShotMap shots={nyrbShots} /> : <ShotMap />}
-        </div>
-      </RevealOnScroll>
+      {/* xG Timeline & Shot Map — only show if we have data */}
+      {(xgTimeline || nyrbShots.length > 0) && (
+        <RevealOnScroll>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {xgTimeline && (
+              <XGTimeline
+                data={xgTimeline}
+                goals={goals}
+                homeLabel={match.homeTeam.split(' ').pop() || 'Home'}
+                awayLabel={match.awayTeam.split(' ').pop() || 'Away'}
+              />
+            )}
+            {nyrbShots.length > 0 && <ShotMap shots={nyrbShots} />}
+          </div>
+        </RevealOnScroll>
+      )}
 
       {/* Events & Stats */}
       <RevealOnScroll>

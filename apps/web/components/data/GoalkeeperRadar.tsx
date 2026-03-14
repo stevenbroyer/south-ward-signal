@@ -23,20 +23,21 @@ interface GoalkeeperRadarProps {
   className?: string;
 }
 
-const SAMPLE_METRICS: GKMetric[] = [
-  { stat: 'Save %', value: 74, average: 68 },
-  { stat: 'xG Prevented', value: 65, average: 50 },
-  { stat: 'GSAA', value: 72, average: 50 },
-  { stat: 'Crosses Claimed', value: 58, average: 55 },
-  { stat: 'Distribution', value: 61, average: 50 },
-  { stat: 'Sweeping', value: 45, average: 48 },
-];
-
 export function GoalkeeperRadar({
-  playerName = 'Carlos Coronel',
-  metrics = SAMPLE_METRICS,
+  playerName = '',
+  metrics = [],
   className = '',
 }: GoalkeeperRadarProps) {
+  if (!metrics.length) {
+    return (
+      <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
+        <h3 className="font-display font-bold text-lg text-sws-white mb-4">GK Analytics</h3>
+        <div className="h-[300px] flex items-center justify-center text-sws-500 text-sm font-mono">
+          No goalkeeper data available
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
       <div className="mb-4">

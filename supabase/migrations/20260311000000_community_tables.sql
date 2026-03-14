@@ -6,9 +6,9 @@
 -- ─── Match Ratings ─────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS match_ratings (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES auth.users(id),
-    match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    match_id        TEXT NOT NULL /* FK to matches — will update when community features go live */,
     player_id       TEXT NOT NULL,
     rating          SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 10),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -21,9 +21,9 @@ CREATE INDEX IF NOT EXISTS idx_match_ratings_user ON match_ratings (user_id);
 -- ─── Predictions ───────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS predictions (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES auth.users(id),
-    match_id        TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    match_id        TEXT NOT NULL /* FK to matches — will update when community features go live */,
     home_score      SMALLINT NOT NULL CHECK (home_score >= 0),
     away_score      SMALLINT NOT NULL CHECK (away_score >= 0),
     points          SMALLINT DEFAULT 0,
@@ -53,10 +53,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_prediction_leaderboard_user
 -- ─── Polls ─────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS polls (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     question        TEXT NOT NULL,
     options         JSONB NOT NULL DEFAULT '[]',
-    match_id        TEXT REFERENCES matches(id) ON DELETE SET NULL,
+    match_id        TEXT /* FK to matches — will update when community features go live */,
     expires_at      TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -67,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_polls_match ON polls (match_id);
 -- ─── Poll Votes ────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS poll_votes (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     poll_id         UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
     user_id         UUID NOT NULL REFERENCES auth.users(id),
     option_index    SMALLINT NOT NULL CHECK (option_index >= 0),

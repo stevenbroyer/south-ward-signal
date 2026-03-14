@@ -3,9 +3,7 @@ import Link from 'next/link';
 import {
   getPlayerDetail,
   getPlayerMatchLog,
-  getPlayerGoalsAddedBreakdown,
   getPlayerSeasonHistory,
-  getPlayerMarketValues,
 } from '@/lib/data-room-queries';
 import { PlayerDetailClient } from './PlayerDetailClient';
 
@@ -21,15 +19,22 @@ export default async function PlayerDetailPage({
   const { name: encodedName } = await params;
   const sp = await searchParams;
   const playerName = decodeURIComponent(encodedName);
-  const season = Number(sp?.season) || 2025;
+  const season = Number(sp?.season) || 2026;
 
-  const [player, matchLog, gaBreakdown, history, marketValues] = await Promise.all([
-    getPlayerDetail(playerName, season),
-    getPlayerMatchLog(playerName, season),
-    getPlayerGoalsAddedBreakdown(playerName, season),
-    getPlayerSeasonHistory(playerName),
-    getPlayerMarketValues(playerName),
-  ]);
+  let player: Awaited<ReturnType<typeof getPlayerDetail>>;
+  let matchLog: Awaited<ReturnType<typeof getPlayerMatchLog>>;
+  let history: Awaited<ReturnType<typeof getPlayerSeasonHistory>>;
+
+  try {
+    [player, matchLog, history] = await Promise.all([
+      getPlayerDetail(playerName, season),
+      getPlayerMatchLog(playerName, season),
+      getPlayerSeasonHistory(playerName),
+    ]);
+  } catch (err) {
+    console.error('[PlayerDetail] Data fetch failed:', err);
+    notFound();
+  }
 
   if (!player) notFound();
 
@@ -49,15 +54,20 @@ export default async function PlayerDetailPage({
     };
   });
 
-  // Build radar data (percentile vs positional average — simplified)
+  // Build radar data (scaled to reasonable season maximums)
+  const maxGoals = season === 2026 ? 8 : 15;
+  const maxAssists = season === 2026 ? 5 : 10;
+  const maxKeyPasses = season === 2026 ? 20 : 40;
+  const maxTackles = season === 2026 ? 30 : 60;
+  const maxInterceptions = season === 2026 ? 20 : 40;
+
   const radarMetrics = [
-    { stat: 'Goals', player: Math.min(100, (player.goals / Math.max(season === 2026 ? 8 : 15, 1)) * 100), average: 50 },
-    { stat: 'Assists', player: Math.min(100, (player.assists / Math.max(season === 2026 ? 5 : 10, 1)) * 100), average: 50 },
-    { stat: 'xG', player: Math.min(100, (Number(player.xg) / Math.max(season === 2026 ? 6 : 12, 1)) * 100), average: 48 },
-    { stat: 'xA', player: Math.min(100, (Number(player.xa) / Math.max(season === 2026 ? 4 : 8, 1)) * 100), average: 44 },
-    { stat: 'Key Passes', player: Math.min(100, ((player.key_passes || 0) / Math.max(season === 2026 ? 15 : 30, 1)) * 100), average: 55 },
+    { stat: 'Goals', player: Math.min(100, ((player.goals ?? 0) / maxGoals) * 100), average: 50 },
+    { stat: 'Assists', player: Math.min(100, ((player.assists ?? 0) / maxAssists) * 100), average: 50 },
+    { stat: 'Key Passes', player: Math.min(100, ((player.key_passes ?? 0) / maxKeyPasses) * 100), average: 55 },
     { stat: 'Pass Comp.', player: Number(player.pass_completion) || 0, average: 72 },
-    { stat: 'G+', player: Math.min(100, Math.max(0, ((Number(player.goals_added) || 0) + 2) / 4 * 100)), average: 50 },
+    { stat: 'Tackles', player: Math.min(100, ((player.tackles_won ?? 0) / maxTackles) * 100), average: 48 },
+    { stat: 'Interceptions', player: Math.min(100, ((player.interceptions ?? 0) / maxInterceptions) * 100), average: 45 },
   ];
 
   return (
@@ -73,14 +83,8 @@ export default async function PlayerDetailPage({
         player={player}
         radarMetrics={radarMetrics}
         progression={progression}
-        gaBreakdown={gaBreakdown}
         history={history}
         matchLog={matchLog}
-        marketValues={marketValues.map((mv: any) => ({
-          date: mv.date,
-          value: Number(mv.value_eur) || 0,
-          team: mv.team || undefined,
-        }))}
       />
     </div>
   );

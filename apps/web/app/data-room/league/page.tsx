@@ -14,14 +14,27 @@ export default async function LeaguePage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2025;
+  const season = Number(params?.season) || 2026;
 
-  const [standings, standingsHistory, xgScatter, topScorers] = await Promise.all([
-    getEnhancedStandings(season, 'Eastern'),
-    getStandingsHistory(season, 'Eastern'),
-    getLeagueXgScatter(season),
-    getTopScorers(season, 20),
-  ]);
+  let standings: Awaited<ReturnType<typeof getEnhancedStandings>>;
+  let standingsHistory: Awaited<ReturnType<typeof getStandingsHistory>>;
+  let xgScatter: Awaited<ReturnType<typeof getLeagueXgScatter>>;
+  let topScorers: Awaited<ReturnType<typeof getTopScorers>>;
+
+  try {
+    [standings, standingsHistory, xgScatter, topScorers] = await Promise.all([
+      getEnhancedStandings(season, 'Eastern'),
+      getStandingsHistory(season, 'Eastern'),
+      getLeagueXgScatter(season),
+      getTopScorers(season, 20),
+    ]);
+  } catch (err) {
+    console.error('[League] Data fetch failed:', err);
+    standings = [];
+    standingsHistory = [];
+    xgScatter = [];
+    topScorers = [];
+  }
 
   return (
     <LeagueClient

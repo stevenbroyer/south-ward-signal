@@ -17,19 +17,40 @@ export default async function DataRoomOverview({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2025;
+  const season = Number(params?.season) || 2026;
 
-  const [metrics, legacyMetrics, latestMatch, standingsData, xgRace, formStreak, trajectory, topPerformers] =
-    await Promise.all([
-      getOverviewMetrics(season),
-      getTeamSeasonMetrics('New York Red Bulls'),
-      getLatestMatch(),
-      getStandings('Eastern'),
-      getSeasonXgRace(season),
-      getFormStreak(season, 10),
-      getPointsTrajectory(season),
-      getTopPerformers(season, 3),
-    ]);
+  let metrics: Awaited<ReturnType<typeof getOverviewMetrics>>;
+  let legacyMetrics: Awaited<ReturnType<typeof getTeamSeasonMetrics>>;
+  let latestMatch: Awaited<ReturnType<typeof getLatestMatch>>;
+  let standingsData: Awaited<ReturnType<typeof getStandings>>;
+  let xgRace: Awaited<ReturnType<typeof getSeasonXgRace>>;
+  let formStreak: Awaited<ReturnType<typeof getFormStreak>>;
+  let trajectory: Awaited<ReturnType<typeof getPointsTrajectory>>;
+  let topPerformers: Awaited<ReturnType<typeof getTopPerformers>>;
+
+  try {
+    [metrics, legacyMetrics, latestMatch, standingsData, xgRace, formStreak, trajectory, topPerformers] =
+      await Promise.all([
+        getOverviewMetrics(season),
+        getTeamSeasonMetrics('New York Red Bulls'),
+        getLatestMatch(),
+        getStandings('Eastern'),
+        getSeasonXgRace(season),
+        getFormStreak(season, 10),
+        getPointsTrajectory(season),
+        getTopPerformers(season, 3),
+      ]);
+  } catch (err) {
+    console.error('[Overview] Data fetch failed:', err);
+    metrics = { points: 0, ppg: 0, xgDiff: 0, goalsAdded: 0, form: [], confRank: 0, gamesPlayed: 0, goalsFor: 0, goalsAgainst: 0, xgFor: 0, xgAgainst: 0 };
+    legacyMetrics = { xgPerMatch: 0, points: 0, goalDifference: 0, ppda: 0, goalsScored: 0, assists: 0, shotsPer90: 0, bigChances: 0, goalsConceded: 0, cleanSheets: 0, tacklesWon: 0, interceptionsPer90: 0 };
+    latestMatch = null;
+    standingsData = [];
+    xgRace = [];
+    formStreak = [];
+    trajectory = [];
+    topPerformers = [];
+  }
 
   const match = latestMatch
     ? {

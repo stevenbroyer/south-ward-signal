@@ -17,22 +17,21 @@ interface PlayerRadarProps {
   className?: string;
 }
 
-const SAMPLE_METRICS = [
-  { stat: 'Goals', player: 82, average: 45 },
-  { stat: 'Assists', player: 68, average: 50 },
-  { stat: 'xG', player: 75, average: 48 },
-  { stat: 'xA', player: 62, average: 44 },
-  { stat: 'Key Passes', player: 70, average: 55 },
-  { stat: 'Tackles', player: 35, average: 52 },
-  { stat: 'Aerial Duels', player: 48, average: 50 },
-  { stat: 'Pass Comp.', player: 88, average: 72 },
-];
-
 export function PlayerRadar({
-  playerName = 'Lewis Morgan',
-  metrics = SAMPLE_METRICS,
+  playerName = '',
+  metrics = [],
   className = '',
 }: PlayerRadarProps) {
+  if (!metrics.length) {
+    return (
+      <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
+        <h3 className="font-display font-bold text-lg text-sws-white mb-4">Player Profile</h3>
+        <div className="h-[300px] flex items-center justify-center text-sws-500 text-sm font-mono">
+          Not enough data for radar chart
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
       <div className="mb-4">

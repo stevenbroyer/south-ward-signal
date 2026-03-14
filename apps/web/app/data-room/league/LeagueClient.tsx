@@ -48,7 +48,6 @@ export function LeagueClient({
                   <th className="text-center py-3 px-2 font-bold">Pts</th>
                   <th className="text-center py-3 px-2 hidden md:table-cell">PPG</th>
                   <th className="text-center py-3 px-2 hidden lg:table-cell">xGD</th>
-                  <th className="text-center py-3 px-2 hidden lg:table-cell">G+</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,13 +94,6 @@ export function LeagueClient({
                       'text-sws-400'
                     }`}>
                       {row.xg_diff != null ? (row.xg_diff > 0 ? '+' : '') + Number(row.xg_diff).toFixed(1) : '—'}
-                    </td>
-                    <td className={`py-3 px-2 text-center font-mono text-xs hidden lg:table-cell ${
-                      row.goals_added != null && row.goals_added > 0 ? 'text-success' :
-                      row.goals_added != null && row.goals_added < 0 ? 'text-red' :
-                      'text-sws-400'
-                    }`}>
-                      {row.goals_added != null ? Number(row.goals_added).toFixed(1) : '—'}
                     </td>
                   </motion.tr>
                 ))}

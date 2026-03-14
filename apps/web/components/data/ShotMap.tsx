@@ -10,16 +10,6 @@ interface Shot {
   player?: string;
 }
 
-const SAMPLE_SHOTS: Shot[] = [
-  { x: 50, y: 18, xg: 0.42, outcome: 'goal', player: 'Vanzeir' },
-  { x: 38, y: 32, xg: 0.12, outcome: 'saved', player: 'Morgan' },
-  { x: 62, y: 28, xg: 0.08, outcome: 'blocked', player: 'Edelman' },
-  { x: 55, y: 15, xg: 0.35, outcome: 'goal', player: 'Morgan' },
-  { x: 45, y: 40, xg: 0.05, outcome: 'off_target', player: 'Luquinhas' },
-  { x: 52, y: 22, xg: 0.22, outcome: 'saved', player: 'Vanzeir' },
-  { x: 35, y: 45, xg: 0.03, outcome: 'blocked', player: 'Nealis' },
-  { x: 48, y: 12, xg: 0.55, outcome: 'saved', player: 'Morgan' },
-];
 
 const outcomeColor: Record<Shot['outcome'], string> = {
   goal: '#ED1A3D',
@@ -33,7 +23,17 @@ interface ShotMapProps {
   className?: string;
 }
 
-export function ShotMap({ shots = SAMPLE_SHOTS, className = '' }: ShotMapProps) {
+export function ShotMap({ shots = [], className = '' }: ShotMapProps) {
+  if (!shots.length) {
+    return (
+      <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
+        <h3 className="font-display font-bold text-lg text-sws-white mb-4">Shot Map</h3>
+        <div className="h-[280px] flex items-center justify-center text-sws-500 text-sm font-mono">
+          Shot location data not available
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
       <div className="flex items-center justify-between mb-4">

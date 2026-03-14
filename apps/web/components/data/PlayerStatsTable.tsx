@@ -20,7 +20,7 @@ interface Player {
   image_url?: string;
 }
 
-type SortKey = 'name' | 'goals' | 'assists' | 'xg' | 'goals_added' | 'minutes' | 'games_played';
+type SortKey = 'name' | 'goals' | 'assists' | 'minutes' | 'games_played' | 'key_passes';
 
 interface PlayerStatsTableProps {
   players?: Player[];
@@ -28,12 +28,12 @@ interface PlayerStatsTableProps {
 }
 
 export function PlayerStatsTable({ players = [], className = '' }: PlayerStatsTableProps) {
-  const [sortKey, setSortKey] = useState<SortKey>('goals_added');
+  const [sortKey, setSortKey] = useState<SortKey>('goals');
   const [sortAsc, setSortAsc] = useState(false);
 
   const sorted = [...players].sort((a, b) => {
-    const aVal = a[sortKey] ?? -999;
-    const bVal = b[sortKey] ?? -999;
+    const aVal = (a as any)[sortKey] ?? -999;
+    const bVal = (b as any)[sortKey] ?? -999;
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
@@ -83,8 +83,7 @@ export function PlayerStatsTable({ players = [], className = '' }: PlayerStatsTa
               <SortHeader label="Min" field="minutes" className="text-center hidden md:table-cell" />
               <SortHeader label="G" field="goals" className="text-center" />
               <SortHeader label="A" field="assists" className="text-center" />
-              <SortHeader label="xG" field="xg" className="text-center hidden sm:table-cell" />
-              <SortHeader label="G+" field="goals_added" className="text-center" />
+              <SortHeader label="KP" field="key_passes" className="text-center hidden sm:table-cell" />
             </tr>
           </thead>
           <tbody>
@@ -121,14 +120,7 @@ export function PlayerStatsTable({ players = [], className = '' }: PlayerStatsTa
                 <td className="py-3 px-2 text-center font-mono text-sws-300 text-xs font-medium">{p.goals}</td>
                 <td className="py-3 px-2 text-center font-mono text-sws-300 text-xs">{p.assists}</td>
                 <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs hidden sm:table-cell">
-                  {Number(p.xg).toFixed(1)}
-                </td>
-                <td className={`py-3 px-2 text-center font-mono text-xs font-medium ${
-                  p.goals_added != null && Number(p.goals_added) > 0 ? 'text-success' :
-                  p.goals_added != null && Number(p.goals_added) < 0 ? 'text-red' :
-                  'text-sws-400'
-                }`}>
-                  {p.goals_added != null ? (Number(p.goals_added) > 0 ? '+' : '') + Number(p.goals_added).toFixed(2) : '—'}
+                  {p.key_passes ?? '—'}
                 </td>
               </motion.tr>
             ))}

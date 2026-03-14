@@ -1,6 +1,4 @@
-import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { getTeamMatchTrends, getHomeAwaySplit, getShotZones, getFormStreak, getGKStats } from '@/lib/data-room-queries';
-import { getGKXGoals, getGKGoalsAdded } from '@/lib/asa-client';
 import { TeamClient } from './TeamClient';
 
 export const revalidate = 60;
@@ -11,9 +9,9 @@ export default async function TeamPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2025;
+  const season = Number(params?.season) || 2026;
 
-  const [trends, homeAway, shotZones, formStreak, gkDbStats] = await Promise.all([
+  const [trends, homeAway, shotZones, formStreak, gkStats] = await Promise.all([
     getTeamMatchTrends(season),
     getHomeAwaySplit(season),
     getShotZones(season),
@@ -21,51 +19,16 @@ export default async function TeamPage({
     getGKStats(season),
   ]);
 
-  // Fetch GK analytics from ASA
-  let gkRadarData: { playerName: string; metrics: Array<{ stat: string; value: number; average: number }> } | null = null;
-  try {
-    const [gkXGoals, gkGA] = await Promise.all([
-      getGKXGoals(season),
-      getGKGoalsAdded(season),
-    ]);
-    const primaryGK = gkXGoals[0]; // Most minutes GK
-    if (primaryGK) {
-      const saveRate = primaryGK.shots_faced > 0
-        ? (primaryGK.saves / primaryGK.shots_faced) * 100 : 0;
-      const xgPrevented = primaryGK.xgoals_gk_faced > 0
-        ? Math.max(0, Math.min(100, 50 + (primaryGK.goals_minus_xgoals_gk * -10))) : 50;
-      const gsaa = Math.max(0, Math.min(100, 50 + (primaryGK.goals_minus_xgoals_gk * -8)));
-
-      // GA breakdown for the GK
-      const gaData = gkGA.find((g) => g.player_id === primaryGK.player_id);
-      const claimingGA = gaData?.data?.find((d) => d.action_type === 'Claiming')?.goals_added_above_avg || 0;
-      const sweepingGA = gaData?.data?.find((d) => d.action_type === 'Sweeping')?.goals_added_above_avg || 0;
-
-      gkRadarData = {
-        playerName: primaryGK.player_name,
-        metrics: [
-          { stat: 'Save %', value: Math.min(100, saveRate), average: 68 },
-          { stat: 'xG Prevented', value: xgPrevented, average: 50 },
-          { stat: 'GSAA', value: gsaa, average: 50 },
-          { stat: 'Crosses Claimed', value: Math.max(0, Math.min(100, 50 + claimingGA * 20)), average: 50 },
-          { stat: 'Distribution', value: 55, average: 50 },
-          { stat: 'Sweeping', value: Math.max(0, Math.min(100, 50 + sweepingGA * 20)), average: 50 },
-        ],
-      };
-    }
-  } catch { /* GK data may not be available */ }
-
   // Build xG trend data with rolling average
   const xgTrend = trends.map((m: any, i: number) => {
-    // 5-game rolling average
     const window = trends.slice(Math.max(0, i - 4), i + 1);
-    const rollingXgFor = +(window.reduce((s: number, w: any) => s + Number(w.xg_for), 0) / window.length).toFixed(2);
-    const rollingXgAgainst = +(window.reduce((s: number, w: any) => s + Number(w.xg_against), 0) / window.length).toFixed(2);
+    const rollingXgFor = +(window.reduce((s: number, w: any) => s + Number(w.xg_for || 0), 0) / window.length).toFixed(2);
+    const rollingXgAgainst = +(window.reduce((s: number, w: any) => s + Number(w.xg_against || 0), 0) / window.length).toFixed(2);
 
     return {
       matchweek: i + 1,
-      xgFor: Number(m.xg_for),
-      xgAgainst: Number(m.xg_against),
+      xgFor: Number(m.xg_for) || 0,
+      xgAgainst: Number(m.xg_against) || 0,
       rollingXgFor,
       rollingXgAgainst,
       opponent: m.opponent,
@@ -86,13 +49,35 @@ export default async function TeamPage({
   const defenseStats = {
     xgaTrend: trends.map((m: any, i: number) => ({
       matchweek: i + 1,
-      xga: Number(m.xg_against),
+      xga: Number(m.xg_against) || 0,
     })),
     cleanSheets: trends.filter((m: any) => m.clean_sheet).length,
-    avgPpda: trends.length
-      ? +(trends.reduce((s: number, m: any) => s + (Number(m.ppda) || 0), 0) / trends.length).toFixed(1)
-      : 0,
+    avgPpda: 0,
   };
+
+  // Build GK radar from real data
+  const primaryGk = (gkStats || []).sort((a: any, b: any) => b.games_played - a.games_played)[0];
+  let gkRadar = null;
+  if (primaryGk && primaryGk.games_played > 0) {
+    const saveRate = primaryGk.saves > 0 && primaryGk.goals_conceded >= 0
+      ? Math.min(100, Math.round((primaryGk.saves / (primaryGk.saves + primaryGk.goals_conceded)) * 100))
+      : 0;
+    const cleanSheetRate = primaryGk.games_played > 0
+      ? Math.min(100, Math.round((primaryGk.clean_sheets / primaryGk.games_played) * 100))
+      : 0;
+    // Normalize stats to 0-100 scale for radar
+    gkRadar = {
+      playerName: primaryGk.name,
+      metrics: [
+        { stat: 'Save %', value: saveRate, average: 68 },
+        { stat: 'Clean Sheet %', value: cleanSheetRate, average: 30 },
+        { stat: 'Saves/Game', value: Math.min(100, Math.round((primaryGk.saves / Math.max(primaryGk.games_played, 1)) * 20)), average: 50 },
+        { stat: 'Games', value: Math.min(100, Math.round((primaryGk.games_played / 34) * 100)), average: 50 },
+        { stat: 'GA/Game', value: Math.max(0, 100 - Math.round((primaryGk.goals_conceded / Math.max(primaryGk.games_played, 1)) * 50)), average: 50 },
+        { stat: 'Minutes', value: Math.min(100, Math.round((primaryGk.minutes / 3060) * 100)), average: 50 },
+      ],
+    };
+  }
 
   return (
     <TeamClient
@@ -102,7 +87,7 @@ export default async function TeamPage({
       shotZones={shotZones}
       defenseStats={defenseStats}
       formStreak={formStreak}
-      gkRadar={gkRadarData}
+      gkRadar={gkRadar}
     />
   );
 }

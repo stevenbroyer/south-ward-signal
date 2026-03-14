@@ -20,9 +20,8 @@ interface PlayerData {
 const COMPARE_STATS = [
   { key: 'goals', label: 'Goals' },
   { key: 'assists', label: 'Assists' },
-  { key: 'xg', label: 'xG' },
-  { key: 'xa', label: 'xA' },
-  { key: 'goals_added', label: 'G+' },
+  { key: 'games_played', label: 'Games' },
+  { key: 'minutes', label: 'Minutes' },
   { key: 'key_passes', label: 'Key Pass' },
   { key: 'pass_completion', label: 'Pass%' },
 ];

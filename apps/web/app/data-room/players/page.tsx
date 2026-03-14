@@ -9,7 +9,7 @@ export default async function PlayersPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const params = await searchParams;
-  const season = Number(params?.season) || 2024;
+  const season = Number(params?.season) || 2026;
 
   // Fetch all players (no position filter) for initial server render.
   // Client-side TanStack Query handles position filtering instantly.

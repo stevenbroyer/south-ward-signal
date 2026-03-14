@@ -99,11 +99,8 @@ export function CompareClient({ playerOptions, selectedNames, compareData }: Com
                   { label: 'Minutes', key: 'minutes' },
                   { label: 'Goals', key: 'goals' },
                   { label: 'Assists', key: 'assists' },
-                  { label: 'xG', key: 'xg', dec: 1 },
-                  { label: 'xA', key: 'xa', dec: 1 },
-                  { label: 'Goals Added', key: 'goals_added', dec: 2, signed: true },
                   { label: 'Key Passes', key: 'key_passes' },
-                  { label: 'Pass Comp.', key: 'pass_completion', dec: 1, suffix: '%' },
+                  { label: 'Pass Comp.', key: 'pass_completion', dec: 0, suffix: '%' },
                 ].map((stat) => {
                   const values = compareData.map((p) => Number(p.raw[stat.key]) || 0);
                   const maxVal = Math.max(...values);
@@ -122,7 +119,7 @@ export function CompareClient({ playerOptions, selectedNames, compareData }: Com
                               isBest ? 'text-sws-white font-bold' : 'text-sws-400'
                             }`}
                           >
-                            {stat.signed && val > 0 ? '+' : ''}{display}{stat.suffix || ''}
+                            {display}{stat.suffix || ''}
                           </td>
                         );
                       })}

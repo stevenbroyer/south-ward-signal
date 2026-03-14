@@ -14,7 +14,6 @@ import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { MetricCard } from '@/components/data/MetricCard';
 import { FormStreak } from '@/components/data/FormStreak';
 import { HomeAwayComparison } from '@/components/data/HomeAwayComparison';
-import { ShotZoneHeatmap } from '@/components/data/ShotZoneHeatmap';
 import { GoalkeeperRadar } from '@/components/data/GoalkeeperRadar';
 
 interface TeamClientProps {
@@ -161,11 +160,10 @@ export function TeamClient({
         </div>
       </RevealOnScroll>
 
-      {/* Home/Away & Shot Zones */}
+      {/* Home/Away Split */}
       <RevealOnScroll>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="mb-6">
           <HomeAwayComparison home={homeAway.home} away={homeAway.away} />
-          <ShotZoneHeatmap shots={shotZones} />
         </div>
       </RevealOnScroll>
 

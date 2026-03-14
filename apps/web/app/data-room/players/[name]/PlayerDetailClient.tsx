@@ -5,27 +5,21 @@ import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { MetricCard } from '@/components/data/MetricCard';
 import { PlayerRadar } from '@/components/data/PlayerRadar';
 import { SeasonProgressionChart } from '@/components/data/SeasonProgressionChart';
-import { GoalsAddedBreakdown } from '@/components/data/GoalsAddedBreakdown';
-import { MarketValueChart } from '@/components/data/MarketValueChart';
 
 interface PlayerDetailClientProps {
   player: any;
   radarMetrics: Array<{ stat: string; player: number; average: number }>;
   progression: Array<{ matchweek: number; goals: number; xg: number; assists: number }>;
-  gaBreakdown: any;
   history: any[];
   matchLog: any[];
-  marketValues?: Array<{ date: string; value: number; team?: string }>;
 }
 
 export function PlayerDetailClient({
   player,
   radarMetrics,
   progression,
-  gaBreakdown,
   history,
   matchLog,
-  marketValues = [],
 }: PlayerDetailClientProps) {
   return (
     <div>
@@ -71,27 +65,20 @@ export function PlayerDetailClient({
 
       {/* Key Stats */}
       <RevealOnScroll>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <MetricCard label="Games" value={player.games_played} />
           <MetricCard label="Minutes" value={player.minutes} />
           <MetricCard label="Goals" value={player.goals} trend={player.goals > 0 ? 'up' : undefined} />
           <MetricCard label="Assists" value={player.assists} />
-          <MetricCard label="xG" value={Number(player.xg)} decimals={1} />
-          <MetricCard
-            label="Goals Added"
-            value={Number(player.goals_added) || 0}
-            decimals={2}
-            prefix={Number(player.goals_added) > 0 ? '+' : ''}
-            trend={Number(player.goals_added) > 0 ? 'up' : Number(player.goals_added) < 0 ? 'down' : undefined}
-          />
+          <MetricCard label="Key Passes" value={player.key_passes ?? 0} />
+          <MetricCard label="Pass Comp." value={Number(player.pass_completion) || 0} suffix="%" />
         </div>
       </RevealOnScroll>
 
-      {/* Radar & G+ Breakdown */}
+      {/* Player Radar */}
       <RevealOnScroll>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="mb-6">
           <PlayerRadar playerName={player.name} metrics={radarMetrics} />
-          <GoalsAddedBreakdown data={gaBreakdown} />
         </div>
       </RevealOnScroll>
 
@@ -100,18 +87,6 @@ export function PlayerDetailClient({
         <RevealOnScroll>
           <div className="mb-6">
             <SeasonProgressionChart data={progression} />
-          </div>
-        </RevealOnScroll>
-      )}
-
-      {/* Market Value */}
-      {marketValues.length > 0 && (
-        <RevealOnScroll>
-          <div className="mb-6">
-            <MarketValueChart
-              playerName={player.name}
-              data={marketValues}
-            />
           </div>
         </RevealOnScroll>
       )}
@@ -176,7 +151,7 @@ export function PlayerDetailClient({
       )}
 
       {/* Season History */}
-      {history.length > 1 && (
+      {history.length > 0 && (
         <RevealOnScroll>
           <div className="bg-bg-card border border-sws-700/50 rounded-xl overflow-hidden">
             <div className="p-5 border-b border-sws-700/40">
@@ -188,10 +163,9 @@ export function PlayerDetailClient({
                   <tr className="text-[10px] font-mono text-sws-500 uppercase tracking-widest border-b border-sws-700/40">
                     <th className="text-left py-3 px-4">Season</th>
                     <th className="text-center py-3 px-2">GP</th>
+                    <th className="text-center py-3 px-2">Min</th>
                     <th className="text-center py-3 px-2">G</th>
                     <th className="text-center py-3 px-2">A</th>
-                    <th className="text-center py-3 px-2 hidden sm:table-cell">xG</th>
-                    <th className="text-center py-3 px-2">G+</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -199,16 +173,9 @@ export function PlayerDetailClient({
                     <tr key={h.season} className="border-b border-sws-700/20 hover:bg-bg-elevated/50">
                       <td className="py-3 px-4 font-mono text-sws-300 text-xs">{h.season}</td>
                       <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{h.games_played}</td>
+                      <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{h.minutes || '—'}</td>
                       <td className="py-3 px-2 text-center font-mono text-sws-300 text-xs">{h.goals}</td>
                       <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{h.assists}</td>
-                      <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs hidden sm:table-cell">
-                        {Number(h.xg).toFixed(1)}
-                      </td>
-                      <td className={`py-3 px-2 text-center font-mono text-xs ${
-                        Number(h.goals_added) > 0 ? 'text-success' : Number(h.goals_added) < 0 ? 'text-red' : 'text-sws-400'
-                      }`}>
-                        {h.goals_added != null ? (Number(h.goals_added) > 0 ? '+' : '') + Number(h.goals_added).toFixed(2) : '—'}
-                      </td>
                     </tr>
                   ))}
                 </tbody>

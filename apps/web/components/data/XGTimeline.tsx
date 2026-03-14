@@ -24,32 +24,6 @@ interface Goal {
   player: string;
 }
 
-const SAMPLE_DATA: XGEvent[] = [
-  { minute: 0, homeXg: 0, awayXg: 0 },
-  { minute: 5, homeXg: 0.08, awayXg: 0.02 },
-  { minute: 12, homeXg: 0.22, awayXg: 0.05 },
-  { minute: 18, homeXg: 0.35, awayXg: 0.12 },
-  { minute: 23, homeXg: 0.72, awayXg: 0.15 },
-  { minute: 30, homeXg: 0.85, awayXg: 0.28 },
-  { minute: 35, homeXg: 0.92, awayXg: 0.42 },
-  { minute: 40, homeXg: 1.05, awayXg: 0.48 },
-  { minute: 45, homeXg: 1.12, awayXg: 0.55 },
-  { minute: 50, homeXg: 1.18, awayXg: 0.62 },
-  { minute: 55, homeXg: 1.25, awayXg: 0.68 },
-  { minute: 60, homeXg: 1.38, awayXg: 0.72 },
-  { minute: 65, homeXg: 1.45, awayXg: 0.78 },
-  { minute: 70, homeXg: 1.52, awayXg: 0.82 },
-  { minute: 75, homeXg: 1.65, awayXg: 0.85 },
-  { minute: 80, homeXg: 1.72, awayXg: 0.88 },
-  { minute: 85, homeXg: 1.78, awayXg: 0.92 },
-  { minute: 90, homeXg: 1.82, awayXg: 0.95 },
-];
-
-const SAMPLE_GOALS: Goal[] = [
-  { minute: 23, team: 'home', player: 'Vanzeir' },
-  { minute: 35, team: 'away', player: 'Gazdag' },
-  { minute: 75, team: 'home', player: 'Morgan' },
-];
 
 interface XGTimelineProps {
   data?: XGEvent[];
@@ -74,12 +48,22 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function XGTimeline({
-  data = SAMPLE_DATA,
-  goals = SAMPLE_GOALS,
+  data = [],
+  goals = [],
   homeLabel = 'NYRB',
   awayLabel = 'PHI',
   className = '',
 }: XGTimelineProps) {
+  if (!data.length) {
+    return (
+      <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
+        <h3 className="font-display font-bold text-lg text-sws-white mb-4">xG Timeline</h3>
+        <div className="h-[280px] flex items-center justify-center text-sws-500 text-sm font-mono">
+          Per-minute xG data not available
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
       <div className="flex items-center justify-between mb-4">

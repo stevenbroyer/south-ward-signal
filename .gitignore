@@ -15,5 +15,18 @@ Thumbs.db
 coverage/
 .vercel/
 out/
+data/fotmob/
+data/fbref/
+data/fbref/_browser_profile/
 
 .vercel
+
+# Build artifacts
+packages/shared/src/*.js
+packages/shared/src/*.js.map
+packages/shared/src/*.d.ts
+packages/shared/src/*.d.ts.map
+apps/web/tsconfig.tsbuildinfo
+
+# Supabase temp
+supabase/.temp/
