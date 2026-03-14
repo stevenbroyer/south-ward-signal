@@ -51,6 +51,25 @@ export async function getLatestMatch() {
       .limit(1)
       .single();
     if (!data) return null;
+
+    // Fetch fixture stats for xG, possession, shots
+    const { data: fStats } = await supabase
+      .from('sm_fixture_stats')
+      .select('team_id, stat_code, value')
+      .eq('fixture_id', data.id)
+      .in('stat_code', ['expected-goals', 'ball-possession', 'shots-total', 'shots-on-target']);
+
+    const statMap: Record<string, Record<string, number>> = {};
+    for (const s of fStats || []) {
+      const side = s.team_id === data.home_team_id ? 'home' : 'away';
+      if (!statMap[s.stat_code]) statMap[s.stat_code] = { home: 0, away: 0 };
+      statMap[s.stat_code][side] = Number(s.value) || 0;
+    }
+
+    const xg = statMap['expected-goals'] || { home: 0, away: 0 };
+    const possession = statMap['ball-possession'] || { home: 50, away: 50 };
+    const shots = statMap['shots-total'] || { home: 0, away: 0 };
+
     return {
       id: String(data.id),
       date: data.starting_at,
@@ -58,11 +77,11 @@ export async function getLatestMatch() {
       away_team: data.away_team_name,
       home_score: data.home_score,
       away_score: data.away_score,
-      home_xg: 0,
-      away_xg: 0,
+      home_xg: xg.home,
+      away_xg: xg.away,
       status: 'finished',
       venue: null,
-      stats: {},
+      stats: { possession, shots },
     };
   } catch (err) {
     console.error('[getLatestMatch]', err);
@@ -88,23 +107,59 @@ export async function getStandings(_conference = 'Eastern') {
       .eq('season_id', season.id)
       .order('position', { ascending: true });
 
-    return (data || []).map((s) => ({
-      id: `${s.season_id}-${s.team_id}`,
-      team: s.team_name,
-      team_id: String(s.team_id),
-      position: s.position,
-      points: s.points,
-      wins: s.won,
-      draws: s.drawn,
-      losses: s.lost,
-      goals_for: s.goals_for,
-      goals_against: s.goals_against,
-      goal_difference: s.goal_difference,
-      games_played: s.games_played,
-      form: s.form ? s.form.split('') : [],
-      conference: s.conference,
-      logo_url: null,
-    }));
+    if (!data?.length) return [];
+
+    // If standings have zeros for games_played, compute from fixtures
+    const needsCompute = data.every((s) => !s.games_played);
+    let computedMap: Map<number, { w: number; d: number; l: number; gf: number; ga: number; form: string[] }> | null = null;
+
+    if (needsCompute) {
+      const { data: fixtures } = await supabase
+        .from('sm_fixtures')
+        .select('home_team_id, away_team_id, home_score, away_score')
+        .eq('season_id', season.id)
+        .eq('state', 'FT');
+
+      computedMap = new Map();
+      for (const f of fixtures || []) {
+        const hs = f.home_score ?? 0;
+        const as = f.away_score ?? 0;
+        for (const tid of [f.home_team_id, f.away_team_id]) {
+          if (!computedMap.has(tid)) computedMap.set(tid, { w: 0, d: 0, l: 0, gf: 0, ga: 0, form: [] });
+          const t = computedMap.get(tid)!;
+          const isHome = tid === f.home_team_id;
+          const gf = isHome ? hs : as;
+          const ga = isHome ? as : hs;
+          t.gf += gf;
+          t.ga += ga;
+          const r = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+          if (r === 'W') t.w++; else if (r === 'D') t.d++; else t.l++;
+          t.form.push(r);
+        }
+      }
+    }
+
+    return data.map((s) => {
+      const c = computedMap?.get(s.team_id);
+      const gp = c ? c.w + c.d + c.l : s.games_played;
+      return {
+        id: `${s.season_id}-${s.team_id}`,
+        team: s.team_name,
+        team_id: String(s.team_id),
+        position: s.position,
+        points: s.points,
+        wins: c?.w ?? s.won,
+        draws: c?.d ?? s.drawn,
+        losses: c?.l ?? s.lost,
+        goals_for: c?.gf ?? s.goals_for,
+        goals_against: c?.ga ?? s.goals_against,
+        goal_difference: c ? c.gf - c.ga : s.goal_difference,
+        games_played: gp,
+        form: c ? c.form.slice(-5) as ('W' | 'D' | 'L')[] : (s.form ? s.form.split('') : []),
+        conference: s.conference,
+        logo_url: null,
+      };
+    });
   } catch (err) {
     console.error('[getStandings]', err);
     return [];

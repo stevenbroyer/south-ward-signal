@@ -112,8 +112,26 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
       }
     }
 
-    const gp = standing?.games_played ?? 0;
     const pts = standing?.points ?? 0;
+    // Use fixture count when standings games_played is 0
+    const gp = standing?.games_played || (allFixtures?.length ?? 0);
+
+    // Compute goals from fixtures when standings has zeros
+    let goalsFor = standing?.goals_for ?? 0;
+    let goalsAgainst = standing?.goals_against ?? 0;
+    if (!goalsFor && !goalsAgainst && allFixtures?.length) {
+      const allFull = await supabase
+        .from('sm_fixtures')
+        .select('home_team_id, home_score, away_score')
+        .eq('season_id', seasonId)
+        .eq('state', 'FT')
+        .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      for (const f of allFull.data || []) {
+        const isHome = f.home_team_id === RBNY_TEAM_ID;
+        goalsFor += (isHome ? f.home_score : f.away_score) ?? 0;
+        goalsAgainst += (isHome ? f.away_score : f.home_score) ?? 0;
+      }
+    }
 
     return {
       points: pts,
@@ -123,8 +141,8 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
       form,
       confRank: standing?.position ?? 0,
       gamesPlayed: gp,
-      goalsFor: standing?.goals_for ?? 0,
-      goalsAgainst: standing?.goals_against ?? 0,
+      goalsFor,
+      goalsAgainst,
       xgFor: +xgFor.toFixed(1),
       xgAgainst: +xgAgainst.toFixed(1),
     };
@@ -472,7 +490,7 @@ export async function getMatchDetail(matchId: string) {
         corners: statsObj['corners'] || { home: 0, away: 0 },
         fouls: statsObj['fouls'] || { home: 0, away: 0 },
         offsides: statsObj['offsides'] || { home: 0, away: 0 },
-        passing_accuracy: statsObj['successful-passes-pct'] || { home: 0, away: 0 },
+        passing_accuracy: statsObj['successful-passes-percentage'] || { home: 0, away: 0 },
         passes: statsObj['passes'] || { home: 0, away: 0 },
         tackles: statsObj['tackles'] || { home: 0, away: 0 },
         interceptions: statsObj['interceptions'] || { home: 0, away: 0 },
@@ -1132,7 +1150,7 @@ export async function getEnhancedStandings(season = 2026, _conference = 'Eastern
     // Get xG for all teams
     const { data: fixtures } = await supabase
       .from('sm_fixtures')
-      .select('id, home_team_id, away_team_id')
+      .select('id, home_team_id, away_team_id, home_score, away_score')
       .eq('season_id', seasonId)
       .eq('state', 'FT');
 
@@ -1172,25 +1190,50 @@ export async function getEnhancedStandings(season = 2026, _conference = 'Eastern
       .in('id', teamIds);
     const logoMap = new Map((teams || []).map((t) => [t.id, t.logo_path]));
 
+    // Compute W/D/L/GF/GA from fixtures when standings has zeros
+    const needsCompute = (data || []).every((s) => !s.games_played);
+    let computedMap: Map<number, { w: number; d: number; l: number; gf: number; ga: number; form: string[] }> | null = null;
+    if (needsCompute && fixtures?.length) {
+      computedMap = new Map();
+      for (const f of fixtures) {
+        const hs = f.home_score ?? 0;
+        const as_ = f.away_score ?? 0;
+        for (const tid of [f.home_team_id, f.away_team_id]) {
+          if (!computedMap.has(tid)) computedMap.set(tid, { w: 0, d: 0, l: 0, gf: 0, ga: 0, form: [] });
+          const t = computedMap.get(tid)!;
+          const isHome = tid === f.home_team_id;
+          const gf = isHome ? hs : as_;
+          const ga = isHome ? as_ : hs;
+          t.gf += gf;
+          t.ga += ga;
+          const r = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+          if (r === 'W') t.w++; else if (r === 'D') t.d++; else t.l++;
+          t.form.push(r);
+        }
+      }
+    }
+
     return (data || []).map((s) => {
       const xg = teamXg.get(s.team_id);
+      const c = computedMap?.get(s.team_id);
+      const gp = c ? c.w + c.d + c.l : s.games_played;
       return {
         id: `${s.season_id}-${s.team_id}`,
         team: s.team_name,
         team_id: String(s.team_id),
         position: s.position,
         points: s.points,
-        wins: s.won,
-        draws: s.drawn,
-        losses: s.lost,
-        goals_for: s.goals_for,
-        goals_against: s.goals_against,
-        goal_difference: s.goal_difference,
-        games_played: s.games_played,
-        form: s.form ? s.form.split('') : [],
+        wins: c?.w ?? s.won,
+        draws: c?.d ?? s.drawn,
+        losses: c?.l ?? s.lost,
+        goals_for: c?.gf ?? s.goals_for,
+        goals_against: c?.ga ?? s.goals_against,
+        goal_difference: c ? c.gf - c.ga : s.goal_difference,
+        games_played: gp,
+        form: c ? c.form.slice(-5) : (s.form ? s.form.split('') : []),
         season,
         conference: s.conference,
-        ppg: s.games_played > 0 ? +(s.points / s.games_played).toFixed(2) : 0,
+        ppg: gp > 0 ? +(s.points / gp).toFixed(2) : 0,
         xg_for: xg ? +xg.xgFor.toFixed(1) : null,
         xg_against: xg ? +xg.xgAgainst.toFixed(1) : null,
         xg_diff: xg ? +(xg.xgFor - xg.xgAgainst).toFixed(1) : null,
