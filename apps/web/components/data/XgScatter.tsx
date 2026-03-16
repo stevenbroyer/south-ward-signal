@@ -129,7 +129,7 @@ export function XgScatter({ data = [], highlightTeam = 'New York RB', className 
                   fontWeight="bold"
                   fontFamily="var(--font-jetbrains)"
                 >
-                  NYRB
+                  RBNY
                 </text>
               )}
             </g>

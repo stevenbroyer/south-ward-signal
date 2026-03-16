@@ -1,6 +1,5 @@
 'use client';
 
-import { displayName } from '@/lib/team-utils';
 
 interface H2HResult {
   homeTeam: string;
@@ -22,11 +21,11 @@ interface H2HComparisonProps {
 }
 
 const SAMPLE_MATCHES: H2HResult[] = [
-  { homeTeam: 'NYRB', awayTeam: 'NYCFC', homeScore: 2, awayScore: 1, date: '2025-09-14' },
-  { homeTeam: 'NYCFC', awayTeam: 'NYRB', homeScore: 0, awayScore: 0, date: '2025-06-21' },
-  { homeTeam: 'NYRB', awayTeam: 'NYCFC', homeScore: 3, awayScore: 2, date: '2025-04-05' },
-  { homeTeam: 'NYCFC', awayTeam: 'NYRB', homeScore: 1, awayScore: 2, date: '2024-09-28' },
-  { homeTeam: 'NYRB', awayTeam: 'NYCFC', homeScore: 1, awayScore: 1, date: '2024-07-13' },
+  { homeTeam: 'RBNY', awayTeam: 'NYCFC', homeScore: 2, awayScore: 1, date: '2025-09-14' },
+  { homeTeam: 'NYCFC', awayTeam: 'RBNY', homeScore: 0, awayScore: 0, date: '2025-06-21' },
+  { homeTeam: 'RBNY', awayTeam: 'NYCFC', homeScore: 3, awayScore: 2, date: '2025-04-05' },
+  { homeTeam: 'NYCFC', awayTeam: 'RBNY', homeScore: 1, awayScore: 2, date: '2024-09-28' },
+  { homeTeam: 'RBNY', awayTeam: 'NYCFC', homeScore: 1, awayScore: 1, date: '2024-07-13' },
 ];
 
 export function H2HComparison({
@@ -44,8 +43,8 @@ export function H2HComparison({
   const drawPct = (draws / total) * 100;
   const awayPct = (awayWins / total) * 100;
 
-  const homeShort = displayName(homeTeam);
-  const awayShort = displayName(awayTeam);
+  const homeShort = homeTeam;
+  const awayShort = awayTeam;
 
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>

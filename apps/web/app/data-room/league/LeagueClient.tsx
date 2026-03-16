@@ -6,7 +6,7 @@ import { motion, useInView } from 'motion/react';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { BumpChart } from '@/components/data/BumpChart';
 import { XgScatter } from '@/components/data/XgScatter';
-import { displayName, isNYRB as checkNYRB } from '@/lib/team-utils';
+import { isNYRB as checkNYRB } from '@/lib/team-utils';
 
 interface LeagueClientProps {
   standings: any[];
@@ -75,7 +75,7 @@ export function LeagueClient({
                             unoptimized
                           />
                         )}
-                        {displayName(row.team)}
+                        {row.team}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{row.games_played}</td>

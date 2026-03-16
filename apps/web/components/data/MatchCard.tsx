@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { displayName, isNYRB } from '@/lib/team-utils';
+import { isNYRB } from '@/lib/team-utils';
 
 function smLogo(teamId?: number) {
   if (!teamId) return null;
@@ -91,7 +91,7 @@ export function MatchCard({
             {homeLogo && (
               <img src={homeLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
             )}
-            <span className="text-sm font-medium truncate">{displayName(homeTeam)}</span>
+            <span className="text-sm font-medium truncate">{homeTeam}</span>
           </div>
           {isFinished && (
             <span className={`text-lg font-mono font-bold ml-4 ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
@@ -106,7 +106,7 @@ export function MatchCard({
             {awayLogo && (
               <img src={awayLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
             )}
-            <span className="text-sm font-medium truncate">{displayName(awayTeam)}</span>
+            <span className="text-sm font-medium truncate">{awayTeam}</span>
           </div>
           {isFinished && (
             <span className={`text-lg font-mono font-bold ml-4 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>

@@ -10,7 +10,7 @@ import { MomentumChart } from '@/components/data/MomentumChart';
 import { StatComparisonBars } from '@/components/data/StatComparisonBars';
 import { AveragePositionsMap } from '@/components/data/AveragePositionsMap';
 import { H2HComparison } from '@/components/data/H2HComparison';
-import { displayName, isNYRB } from '@/lib/team-utils';
+import { isNYRB } from '@/lib/team-utils';
 
 interface MatchInfo {
   id: string;
@@ -128,7 +128,7 @@ export function MatchDetailClient({
           <div className="flex items-center justify-center gap-6 mb-4">
             <div className="text-right flex-1">
               <p className={`font-display font-bold text-lg ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
-                {displayName(match.homeTeam)}
+                {match.homeTeam}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export function MatchDetailClient({
             </div>
             <div className="text-left flex-1">
               <p className={`font-display font-bold text-lg ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
-                {displayName(match.awayTeam)}
+                {match.awayTeam}
               </p>
             </div>
           </div>
@@ -159,8 +159,8 @@ export function MatchDetailClient({
               <XGTimeline
                 data={xgTimeline}
                 goals={goals}
-                homeLabel={displayName(match.homeTeam)}
-                awayLabel={displayName(match.awayTeam)}
+                homeLabel={match.homeTeam}
+                awayLabel={match.awayTeam}
                 isNYRBHome={isNYRBHome}
               />
             )}
@@ -174,13 +174,13 @@ export function MatchDetailClient({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <EventTimeline
             events={events}
-            homeTeam={displayName(match.homeTeam)}
-            awayTeam={displayName(match.awayTeam)}
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
           />
           <StatComparisonBars
             stats={statPairs}
-            homeTeam={displayName(match.homeTeam)}
-            awayTeam={displayName(match.awayTeam)}
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
             isNYRBHome={isNYRBHome}
           />
         </div>

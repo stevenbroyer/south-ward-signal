@@ -84,7 +84,7 @@ export function FeaturedArticle({
             {/* Mini xG Bar */}
             <div className="space-y-2 mb-6">
               <div className="flex items-center justify-between text-xs font-mono text-sws-400">
-                <span>NYRB xG</span>
+                <span>RBNY xG</span>
                 <span className="text-red">{homeXg.toFixed(2)}</span>
               </div>
               <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">

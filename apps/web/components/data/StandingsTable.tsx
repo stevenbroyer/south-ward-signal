@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import Image from 'next/image';
 import { motion, useInView } from 'motion/react';
 import { FormBadge } from './FormBadge';
-import { displayName, isNYRB as checkNYRB } from '@/lib/team-utils';
+import { isNYRB as checkNYRB } from '@/lib/team-utils';
 
 type FormResult = 'W' | 'D' | 'L';
 
@@ -92,7 +92,7 @@ export function StandingsTable({ standings = SAMPLE_STANDINGS, className = '' }:
                         unoptimized
                       />
                     )}
-                    {displayName(row.team)}
+                    {row.team}
                   </span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs hidden sm:table-cell">{row.played}</td>

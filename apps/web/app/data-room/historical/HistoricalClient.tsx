@@ -158,7 +158,7 @@ export function HistoricalClient({
       <RevealOnScroll>
         <div className="bg-bg-card border border-sws-700/50 rounded-xl overflow-hidden">
           <div className="p-5 border-b border-sws-700/40">
-            <h3 className="font-display font-bold text-lg text-sws-white">All-Time NYRB Player Contributions</h3>
+            <h3 className="font-display font-bold text-lg text-sws-white">All-Time RBNY Player Contributions</h3>
             <p className="text-xs font-mono text-sws-500 mt-1">2016-2026 · Sorted by Goals Added</p>
           </div>
           <div className="overflow-x-auto">

@@ -11,7 +11,7 @@ interface SocialPost {
 
 const SAMPLE_POSTS: SocialPost[] = [
   { platform: 'twitter', content: 'Vanzeir with the clinical finish. 2-1 Red Bulls. The press is relentless tonight. #RBNY', timestamp: '2h ago', url: '#' },
-  { platform: 'twitter', content: 'xG after 70 minutes: NYRB 1.52 - 0.82 PHI. Red Bulls controlling the game through the middle third.', timestamp: '3h ago', url: '#' },
+  { platform: 'twitter', content: 'xG after 70 minutes: RBNY 1.52 - 0.82 PHI. Red Bulls controlling the game through the middle third.', timestamp: '3h ago', url: '#' },
   { platform: 'instagram', content: 'Match day vibes from the South Ward. Packed house at Red Bull Arena tonight.', timestamp: '5h ago', url: '#' },
   { platform: 'twitter', content: 'Lewis Morgan is having an elite season. 4 goals, 3 assists — and his underlying numbers are even better.', timestamp: '1d ago', url: '#' },
 ];

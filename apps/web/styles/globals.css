@@ -284,10 +284,12 @@
 
 .article-content h2 {
   @apply text-sws-white mt-12 mb-4 text-2xl font-display;
+  scroll-margin-top: 6rem;
 }
 
 .article-content h3 {
   @apply text-sws-white mt-8 mb-3 text-xl font-display;
+  scroll-margin-top: 6rem;
 }
 
 .article-content p {
@@ -325,6 +327,7 @@
 .article-content code {
   @apply font-mono text-sm bg-bg-elevated px-2 py-1 rounded;
 }
+
 
 /* ─── Reduced Motion ─────────────────────────────────────── */
 

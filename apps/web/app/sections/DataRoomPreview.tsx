@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
-import { displayName, isNYRB as checkNYRB } from '@/lib/team-utils';
+import { isNYRB as checkNYRB } from '@/lib/team-utils';
 
 interface MatchDataProp {
   home_team: string;
@@ -148,7 +148,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
               {/* Score — home on left, away on right (standard soccer layout) */}
               <div className="flex items-center justify-center gap-8 mb-6">
                 <div className="text-right flex-1">
-                  <div className={`text-sm font-semibold mb-1 ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{displayName(match.home_team)}</div>
+                  <div className={`text-sm font-semibold mb-1 ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.home_team}</div>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className={`text-4xl font-mono font-bold ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.home_score ?? '-'}</span>
@@ -156,7 +156,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
                   <span className={`text-4xl font-mono font-bold ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.away_score ?? '-'}</span>
                 </div>
                 <div className="text-left flex-1">
-                  <div className={`text-sm font-semibold mb-1 ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{displayName(match.away_team)}</div>
+                  <div className={`text-sm font-semibold mb-1 ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.away_team}</div>
                 </div>
               </div>
 
@@ -210,7 +210,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
                         <td className="py-2.5 text-xs font-mono text-sws-400">{row.position}</td>
                         <td className={`py-2.5 text-xs font-semibold ${isNYRB ? 'text-red' : 'text-sws-200'}`}>
                           {isNYRB && <span className="inline-block w-0.5 h-3 bg-red rounded-full mr-2" />}
-                          {displayName(row.team)}
+                          {row.team}
                         </td>
                         <td className="py-2.5 text-xs font-mono text-center text-sws-300">{row.wins}</td>
                         <td className="py-2.5 text-xs font-mono text-center text-sws-300">{row.draws}</td>

@@ -51,7 +51,7 @@ function CustomTooltip({ active, payload, label }: any) {
 export function XGTimeline({
   data = [],
   goals = [],
-  homeLabel = 'NYRB',
+  homeLabel = 'RBNY',
   awayLabel = 'PHI',
   isNYRBHome = true,
   className = '',

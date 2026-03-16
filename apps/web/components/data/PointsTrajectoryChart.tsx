@@ -56,7 +56,7 @@ export function PointsTrajectoryChart({ data = [], className = '' }: PointsTraje
         <div className="flex items-center gap-3 text-[10px] font-mono">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-[2px] bg-red inline-block rounded" />
-            NYRB
+            RBNY
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-[2px] bg-success/50 inline-block rounded" />
