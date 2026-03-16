@@ -13,6 +13,7 @@ interface AveragePositionsMapProps {
   away?: PlayerPosition[];
   homeTeam?: string;
   awayTeam?: string;
+  isNYRBHome?: boolean;
   className?: string;
 }
 
@@ -35,8 +36,15 @@ export function AveragePositionsMap({
   away = [],
   homeTeam = 'Home',
   awayTeam = 'Away',
+  isNYRBHome = true,
   className = '',
 }: AveragePositionsMapProps) {
+  const nyrbColor = '#ED1A3D';
+  const oppColor = '#6E6E7A';
+  const homeColor = isNYRBHome ? nyrbColor : oppColor;
+  const awayColor = isNYRBHome ? oppColor : nyrbColor;
+  const homeBgClass = isNYRBHome ? 'bg-red' : 'bg-sws-400';
+  const awayBgClass = isNYRBHome ? 'bg-sws-400' : 'bg-red';
   const allPlayers = [
     ...home.map((p) => ({ ...p, isHome: true })),
     ...away.map((p) => ({ ...p, isHome: false })),
@@ -51,12 +59,12 @@ export function AveragePositionsMap({
         <h3 className="font-display font-bold text-lg text-sws-white">Average Positions</h3>
         <div className="flex items-center gap-3 text-[10px] font-mono">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red inline-block" />
+            <span className={`w-2 h-2 rounded-full ${homeBgClass} inline-block`} />
             {homeTeam}
           </span>
           {showBothSides && (
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sws-400 inline-block" />
+              <span className={`w-2 h-2 rounded-full ${awayBgClass} inline-block`} />
               {awayTeam}
             </span>
           )}
@@ -98,7 +106,7 @@ export function AveragePositionsMap({
                   cx={finalX}
                   cy={py}
                   r="3"
-                  fill={p.isHome ? '#ED1A3D' : '#6E6E7A'}
+                  fill={p.isHome ? homeColor : awayColor}
                   fillOpacity={0.15}
                 />
                 {/* Dot */}
@@ -106,8 +114,8 @@ export function AveragePositionsMap({
                   cx={finalX}
                   cy={py}
                   r="1.8"
-                  fill={p.isHome ? '#ED1A3D' : '#8888A0'}
-                  stroke={p.isHome ? '#ff4060' : '#aaaacc'}
+                  fill={p.isHome ? homeColor : awayColor}
+                  stroke={p.isHome ? (isNYRBHome ? '#ff4060' : '#aaaacc') : (isNYRBHome ? '#aaaacc' : '#ff4060')}
                   strokeWidth="0.3"
                 />
                 {/* Shirt number */}

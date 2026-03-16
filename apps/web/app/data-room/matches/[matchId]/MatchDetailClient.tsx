@@ -79,14 +79,14 @@ export function MatchDetailClient({
   averagePositions,
   h2h,
 }: MatchDetailClientProps) {
-  const isNYRBHome = match.homeTeam.includes('Red Bulls');
+  const isNYRBHome = match.homeTeam.includes('Red Bull') || match.homeTeam.includes('New York RB');
   const nybWon = isNYRBHome
     ? match.homeScore > match.awayScore
     : match.awayScore > match.homeScore;
 
   // Split shots by team for the shot map - show NYRB shots
   const nyrbShots = shots
-    .filter((s) => s.team?.includes('Red Bulls'))
+    .filter((s) => s.team?.includes('Red Bull'))
     .map((s) => ({
       x: s.x,
       y: s.y,
@@ -131,9 +131,9 @@ export function MatchDetailClient({
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-5xl font-mono font-bold text-sws-white">{match.homeScore}</span>
+              <span className={`text-5xl font-mono font-bold ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.homeScore}</span>
               <span className="text-lg font-mono text-sws-600">-</span>
-              <span className="text-5xl font-mono font-bold text-sws-300">{match.awayScore}</span>
+              <span className={`text-5xl font-mono font-bold ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.awayScore}</span>
             </div>
             <div className="text-left flex-1">
               <p className={`font-display font-bold text-lg ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
@@ -160,6 +160,7 @@ export function MatchDetailClient({
                 goals={goals}
                 homeLabel={match.homeTeam.split(' ').pop() || 'Home'}
                 awayLabel={match.awayTeam.split(' ').pop() || 'Away'}
+                isNYRBHome={isNYRBHome}
               />
             )}
             {nyrbShots.length > 0 && <ShotMap shots={nyrbShots} />}
@@ -179,6 +180,7 @@ export function MatchDetailClient({
             stats={statPairs}
             homeTeam={match.homeTeam}
             awayTeam={match.awayTeam}
+            isNYRBHome={isNYRBHome}
           />
         </div>
       </RevealOnScroll>
@@ -191,6 +193,7 @@ export function MatchDetailClient({
               data={momentum}
               homeTeam={match.homeTeam}
               awayTeam={match.awayTeam}
+              isNYRBHome={isNYRBHome}
             />
           </div>
         </RevealOnScroll>
@@ -206,6 +209,7 @@ export function MatchDetailClient({
                 away={averagePositions.away}
                 homeTeam={match.homeTeam}
                 awayTeam={match.awayTeam}
+                isNYRBHome={isNYRBHome}
               />
             )}
             {h2h && (
@@ -216,6 +220,7 @@ export function MatchDetailClient({
                 awayWins={h2h.awayWins}
                 draws={h2h.draws}
                 recentMatches={h2h.events}
+                isNYRBHome={isNYRBHome}
               />
             )}
           </div>

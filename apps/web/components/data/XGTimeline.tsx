@@ -30,6 +30,7 @@ interface XGTimelineProps {
   goals?: Goal[];
   homeLabel?: string;
   awayLabel?: string;
+  isNYRBHome?: boolean;
   className?: string;
 }
 
@@ -52,8 +53,13 @@ export function XGTimeline({
   goals = [],
   homeLabel = 'NYRB',
   awayLabel = 'PHI',
+  isNYRBHome = true,
   className = '',
 }: XGTimelineProps) {
+  const homeColor = isNYRBHome ? '#ED1A3D' : '#6E6E7A';
+  const awayColor = isNYRBHome ? '#6E6E7A' : '#ED1A3D';
+  const homeBgClass = isNYRBHome ? 'bg-red' : 'bg-sws-400';
+  const awayBgClass = isNYRBHome ? 'bg-sws-400' : 'bg-red';
   if (!data.length) {
     return (
       <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
@@ -70,11 +76,11 @@ export function XGTimeline({
         <h3 className="font-display font-bold text-lg text-sws-white">xG Timeline</h3>
         <div className="flex items-center gap-4 text-xs font-mono">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-[2px] bg-red inline-block rounded" />
+            <span className={`w-3 h-[2px] ${homeBgClass} inline-block rounded`} />
             {homeLabel}
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-[2px] bg-sws-400 inline-block rounded" />
+            <span className={`w-3 h-[2px] ${awayBgClass} inline-block rounded`} />
             {awayLabel}
           </span>
         </div>
@@ -85,12 +91,12 @@ export function XGTimeline({
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="homeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ED1A3D" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#ED1A3D" stopOpacity={0} />
+                <stop offset="0%" stopColor={homeColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={homeColor} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="awayGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6E6E7A" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="#6E6E7A" stopOpacity={0} />
+                <stop offset="0%" stopColor={awayColor} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={awayColor} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#2A2A32" vertical={false} />
@@ -111,7 +117,7 @@ export function XGTimeline({
               type="monotone"
               dataKey="homeXg"
               name={homeLabel}
-              stroke="#ED1A3D"
+              stroke={homeColor}
               strokeWidth={2}
               fill="url(#homeGrad)"
             />
@@ -119,7 +125,7 @@ export function XGTimeline({
               type="monotone"
               dataKey="awayXg"
               name={awayLabel}
-              stroke="#6E6E7A"
+              stroke={awayColor}
               strokeWidth={1.5}
               fill="url(#awayGrad)"
             />
@@ -133,7 +139,7 @@ export function XGTimeline({
                   x={goal.minute}
                   y={goal.team === 'home' ? point.homeXg : point.awayXg}
                   r={5}
-                  fill={goal.team === 'home' ? '#ED1A3D' : '#6E6E7A'}
+                  fill={goal.team === 'home' ? homeColor : awayColor}
                   stroke="#0A0A0C"
                   strokeWidth={2}
                 />
@@ -149,7 +155,7 @@ export function XGTimeline({
           <span
             key={i}
             className={`text-[11px] font-mono px-2 py-1 rounded ${
-              goal.team === 'home'
+              (goal.team === 'home') === isNYRBHome
                 ? 'bg-red/10 text-red border border-red/20'
                 : 'bg-sws-700 text-sws-300 border border-sws-600'
             }`}

@@ -14,6 +14,7 @@ interface StatComparisonBarsProps {
   stats?: StatPair[];
   homeTeam?: string;
   awayTeam?: string;
+  isNYRBHome?: boolean;
   className?: string;
 }
 
@@ -27,8 +28,13 @@ export function StatComparisonBars({
   stats = [],
   homeTeam = 'Home',
   awayTeam = 'Away',
+  isNYRBHome = true,
   className = '',
 }: StatComparisonBarsProps) {
+  const nyrbBarColor = 'bg-red';
+  const oppBarColor = 'bg-sws-400';
+  const homeBarColor = isNYRBHome ? nyrbBarColor : oppBarColor;
+  const awayBarColor = isNYRBHome ? oppBarColor : nyrbBarColor;
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
 
@@ -44,16 +50,16 @@ export function StatComparisonBars({
   return (
     <div ref={ref} className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-sws-white">{homeTeam}</span>
+        <span className={`text-sm font-medium ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{homeTeam}</span>
         <h3 className="font-display font-bold text-lg text-sws-white">Match Stats</h3>
-        <span className="text-sm font-medium text-sws-400">{awayTeam}</span>
+        <span className={`text-sm font-medium ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{awayTeam}</span>
       </div>
 
       <div className="space-y-4">
         {stats.map((stat, i) => {
-          const total = stat.home + stat.away || 1;
-          const homePct = (stat.home / total) * 100;
-          const awayPct = (stat.away / total) * 100;
+          const total = (stat.home || 0) + (stat.away || 0) || 1;
+          const homePct = ((stat.home || 0) / total) * 100;
+          const awayPct = ((stat.away || 0) / total) * 100;
           const homeWins = stat.home > stat.away;
 
           return (
@@ -70,7 +76,7 @@ export function StatComparisonBars({
               <div className="flex gap-1 h-1.5">
                 <div className="flex-1 bg-sws-700 rounded-full overflow-hidden flex justify-end">
                   <motion.div
-                    className="h-full bg-red rounded-full"
+                    className={`h-full ${homeBarColor} rounded-full`}
                     initial={{ width: 0 }}
                     animate={inView ? { width: `${homePct}%` } : { width: 0 }}
                     transition={{ duration: 0.8, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
@@ -78,7 +84,7 @@ export function StatComparisonBars({
                 </div>
                 <div className="flex-1 bg-sws-700 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-sws-400 rounded-full"
+                    className={`h-full ${awayBarColor} rounded-full`}
                     initial={{ width: 0 }}
                     animate={inView ? { width: `${awayPct}%` } : { width: 0 }}
                     transition={{ duration: 0.8, delay: i * 0.06 + 0.1, ease: [0.22, 1, 0.36, 1] }}

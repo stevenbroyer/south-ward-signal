@@ -15,6 +15,7 @@ interface H2HComparisonProps {
   awayWins?: number;
   draws?: number;
   recentMatches?: H2HResult[];
+  isNYRBHome?: boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export function H2HComparison({
   awayWins = 5,
   draws = 3,
   recentMatches = SAMPLE_MATCHES,
+  isNYRBHome = true,
   className = '',
 }: H2HComparisonProps) {
   const total = homeWins + awayWins + draws || 1;
@@ -50,7 +52,7 @@ export function H2HComparison({
       {/* Record Summary */}
       <div className="flex items-center justify-between mb-3">
         <div className="text-center">
-          <p className="text-2xl font-mono font-bold text-red">{homeWins}</p>
+          <p className={`text-2xl font-mono font-bold ${isNYRBHome ? 'text-red' : 'text-sws-300'}`}>{homeWins}</p>
           <p className="text-[10px] font-mono text-sws-500 uppercase">{homeShort}</p>
         </div>
         <div className="text-center">
@@ -58,16 +60,16 @@ export function H2HComparison({
           <p className="text-[10px] font-mono text-sws-500 uppercase">Draws</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-mono font-bold text-sws-300">{awayWins}</p>
+          <p className={`text-2xl font-mono font-bold ${!isNYRBHome ? 'text-red' : 'text-sws-300'}`}>{awayWins}</p>
           <p className="text-[10px] font-mono text-sws-500 uppercase">{awayShort}</p>
         </div>
       </div>
 
       {/* Win bar */}
       <div className="flex h-2 rounded-full overflow-hidden mb-5">
-        <div className="bg-red" style={{ width: `${homePct}%` }} />
+        <div className={isNYRBHome ? 'bg-red' : 'bg-sws-300'} style={{ width: `${homePct}%` }} />
         <div className="bg-sws-500" style={{ width: `${drawPct}%` }} />
-        <div className="bg-sws-300" style={{ width: `${awayPct}%` }} />
+        <div className={!isNYRBHome ? 'bg-red' : 'bg-sws-300'} style={{ width: `${awayPct}%` }} />
       </div>
 
       {/* Recent Results */}

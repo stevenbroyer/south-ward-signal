@@ -33,6 +33,7 @@ interface MomentumChartProps {
   data?: MomentumPoint[];
   homeTeam?: string;
   awayTeam?: string;
+  isNYRBHome?: boolean;
   className?: string;
 }
 
@@ -40,8 +41,13 @@ export function MomentumChart({
   data = [],
   homeTeam = 'Home',
   awayTeam = 'Away',
+  isNYRBHome = true,
   className = '',
 }: MomentumChartProps) {
+  const homeColor = isNYRBHome ? '#ED1A3D' : '#6E6E7A';
+  const awayColor = isNYRBHome ? '#6E6E7A' : '#ED1A3D';
+  const homeBgClass = isNYRBHome ? 'bg-red' : 'bg-sws-400';
+  const awayBgClass = isNYRBHome ? 'bg-sws-400' : 'bg-red';
   if (!data.length) {
     return (
       <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
@@ -66,11 +72,11 @@ export function MomentumChart({
         <h3 className="font-display font-bold text-lg text-sws-white">Momentum</h3>
         <div className="flex items-center gap-4 text-xs font-mono">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red inline-block" />
+            <span className={`w-2 h-2 rounded-full ${homeBgClass} inline-block`} />
             {homeTeam}
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-sws-400 inline-block" />
+            <span className={`w-2 h-2 rounded-full ${awayBgClass} inline-block`} />
             {awayTeam}
           </span>
         </div>
@@ -81,12 +87,12 @@ export function MomentumChart({
           <AreaChart data={splitData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="momHomeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ED1A3D" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#ED1A3D" stopOpacity={0} />
+                <stop offset="0%" stopColor={homeColor} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={homeColor} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="momAwayGrad" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor="#6E6E7A" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#6E6E7A" stopOpacity={0} />
+                <stop offset="0%" stopColor={awayColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={awayColor} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#2A2A32" vertical={false} />
@@ -103,14 +109,14 @@ export function MomentumChart({
             <Area
               type="monotone"
               dataKey="home"
-              stroke="#ED1A3D"
+              stroke={homeColor}
               strokeWidth={1.5}
               fill="url(#momHomeGrad)"
             />
             <Area
               type="monotone"
               dataKey="away"
-              stroke="#6E6E7A"
+              stroke={awayColor}
               strokeWidth={1.5}
               fill="url(#momAwayGrad)"
             />

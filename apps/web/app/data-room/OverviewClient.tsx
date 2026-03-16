@@ -125,6 +125,7 @@ export function OverviewClient({
               possession={match.possession}
               shots={match.shots}
               xg={match.xg}
+              isNYRBHome={match.homeTeam.includes('Red Bull')}
             />
           ) : (
             <MatchScoreboard />

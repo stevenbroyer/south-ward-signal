@@ -13,13 +13,14 @@ interface MatchScoreboardProps {
   possession?: [number, number];
   shots?: [number, number];
   xg?: [number, number];
+  isNYRBHome?: boolean;
   className?: string;
 }
 
-function StatBar({ label, home, away }: { label: string; home: number; away: number }) {
+function StatBar({ label, home, away, homeBarColor = 'bg-red', awayBarColor = 'bg-sws-400' }: { label: string; home: number; away: number; homeBarColor?: string; awayBarColor?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
-  const total = home + away || 1;
+  const total = (home || 0) + (away || 0) || 1;
 
   return (
     <div ref={ref} className="space-y-1.5">
@@ -31,7 +32,7 @@ function StatBar({ label, home, away }: { label: string; home: number; away: num
       <div className="flex gap-1 h-1.5">
         <div className="flex-1 bg-sws-700 rounded-full overflow-hidden flex justify-end">
           <motion.div
-            className="h-full bg-red rounded-full"
+            className={`h-full ${homeBarColor} rounded-full`}
             initial={{ width: 0 }}
             animate={inView ? { width: `${(home / total) * 100}%` } : { width: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
@@ -39,7 +40,7 @@ function StatBar({ label, home, away }: { label: string; home: number; away: num
         </div>
         <div className="flex-1 bg-sws-700 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-sws-400 rounded-full"
+            className={`h-full ${awayBarColor} rounded-full`}
             initial={{ width: 0 }}
             animate={inView ? { width: `${(away / total) * 100}%` } : { width: 0 }}
             transition={{ duration: 1, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
@@ -60,9 +61,12 @@ export function MatchScoreboard({
   possession = [58, 42],
   shots = [14, 9],
   xg = [1.82, 0.95],
+  isNYRBHome = true,
   className = '',
 }: MatchScoreboardProps) {
-  const nybWon = homeScore > awayScore;
+  const nybScore = isNYRBHome ? homeScore : awayScore;
+  const oppScore = isNYRBHome ? awayScore : homeScore;
+  const nybWon = (nybScore ?? 0) > (oppScore ?? 0);
 
   return (
     <motion.div
@@ -83,23 +87,23 @@ export function MatchScoreboard({
       {/* Score */}
       <div className="flex items-center justify-center gap-6 mb-8">
         <div className="text-right flex-1">
-          <p className="font-display font-bold text-sws-white text-sm md:text-base">{homeTeam}</p>
+          <p className={`font-display font-bold text-sm md:text-base ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{homeTeam}</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-4xl md:text-5xl font-mono font-bold text-sws-white">{homeScore}</span>
+          <span className={`text-4xl md:text-5xl font-mono font-bold ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{homeScore}</span>
           <span className="text-lg font-mono text-sws-600">-</span>
-          <span className="text-4xl md:text-5xl font-mono font-bold text-sws-300">{awayScore}</span>
+          <span className={`text-4xl md:text-5xl font-mono font-bold ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{awayScore}</span>
         </div>
         <div className="text-left flex-1">
-          <p className="font-display font-bold text-sws-400 text-sm md:text-base">{awayTeam}</p>
+          <p className={`font-display font-bold text-sm md:text-base ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{awayTeam}</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="space-y-4">
-        <StatBar label="Possession" home={possession[0]} away={possession[1]} />
-        <StatBar label="Shots" home={shots[0]} away={shots[1]} />
-        <StatBar label="xG" home={xg[0]} away={xg[1]} />
+        <StatBar label="Possession" home={possession[0]} away={possession[1]} homeBarColor={isNYRBHome ? 'bg-red' : 'bg-sws-400'} awayBarColor={isNYRBHome ? 'bg-sws-400' : 'bg-red'} />
+        <StatBar label="Shots" home={shots[0]} away={shots[1]} homeBarColor={isNYRBHome ? 'bg-red' : 'bg-sws-400'} awayBarColor={isNYRBHome ? 'bg-sws-400' : 'bg-red'} />
+        <StatBar label="xG" home={xg[0]} away={xg[1]} homeBarColor={isNYRBHome ? 'bg-red' : 'bg-sws-400'} awayBarColor={isNYRBHome ? 'bg-sws-400' : 'bg-red'} />
       </div>
     </motion.div>
   );
