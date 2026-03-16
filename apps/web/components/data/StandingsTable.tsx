@@ -43,12 +43,12 @@ interface StandingsTableProps {
 export function StandingsTable({ standings = SAMPLE_STANDINGS, className = '' }: StandingsTableProps) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-40px' });
-  const isNYRB = (name: string) => name.includes('Red Bulls');
+  const isNYRB = (name: string) => name.includes('Red Bull') || name.includes('New York RB');
 
   return (
     <div ref={ref} className={`bg-bg-card border border-sws-700/50 rounded-xl overflow-hidden ${className}`}>
       <div className="p-5 border-b border-sws-700/40">
-        <h3 className="font-display font-bold text-lg text-sws-white">Eastern Conference</h3>
+        <h3 className="font-display font-bold text-lg text-sws-white">MLS Standings</h3>
         <p className="text-xs font-mono text-sws-500 mt-1">2026 MLS Season</p>
       </div>
 

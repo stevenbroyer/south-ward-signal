@@ -4,31 +4,40 @@ import { LatestSection } from './sections/LatestSection';
 import { DataRoomPreview } from './sections/DataRoomPreview';
 import { SocialPreview } from './sections/SocialPreview';
 import { AboutPreview } from './sections/AboutPreview';
-import { getLatestArticles } from '@/lib/ghost';
+import { createAdminClient } from '@/lib/supabase-auth';
 import { getLatestMatch, getNextScheduledMatch, getStandings } from '@/lib/supabase';
 import { getMatchDayState } from '@/lib/match-day';
 
 export const revalidate = 60;
 
+async function getLatestPublishedArticles(limit = 5) {
+  const db = createAdminClient();
+  const { data } = await db
+    .from('articles')
+    .select('slug, title, excerpt, featured_image, type, word_count, published_at')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((a) => ({
+    slug: a.slug,
+    title: a.title,
+    excerpt: a.excerpt || '',
+    primary_tag: a.type || 'Article',
+    published_at: a.published_at || '',
+    reading_time: Math.max(1, Math.round((a.word_count || 0) / 250)),
+    feature_image: a.featured_image || undefined,
+  }));
+}
+
 export default async function HomePage() {
-  const [articles, latestMatch, nextMatch, standings] = await Promise.all([
-    getLatestArticles(5),
+  const [normalizedArticles, latestMatch, nextMatch, standings] = await Promise.all([
+    getLatestPublishedArticles(5),
     getLatestMatch(),
     getNextScheduledMatch(),
     getStandings('Eastern'),
   ]);
 
   const matchDayContext = getMatchDayState(nextMatch, latestMatch);
-
-  const normalizedArticles = articles.map((a) => ({
-    slug: a.slug,
-    title: a.title,
-    excerpt: a.custom_excerpt || a.excerpt || '',
-    primary_tag: a.primary_tag?.name || a.tags?.[0]?.name || 'Article',
-    published_at: a.published_at,
-    reading_time: a.reading_time || 5,
-    feature_image: a.feature_image || undefined,
-  }));
 
   return (
     <>

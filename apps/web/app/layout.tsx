@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { headers } from 'next/headers';
 import { fraunces, sourceSans, jetbrainsMono } from '@/lib/fonts';
 import { Navbar } from '@/components/layout/Navbar';
@@ -47,10 +48,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="en"
       className={`${fraunces.variable} ${sourceSans.variable} ${jetbrainsMono.variable}`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head />
       <body className="bg-bg text-sws-white font-body antialiased">
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`(function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "vwhom0b8z1");`}
+        </Script>
         {isAdmin ? (
           <main className="min-h-screen">{children}</main>
         ) : (

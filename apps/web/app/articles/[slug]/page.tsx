@@ -1,40 +1,52 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getArticleBySlug, getLatestArticles, getAllSlugs } from '@/lib/ghost';
+import { createAdminClient } from '@/lib/supabase-auth';
 import { TagBadge } from '@/components/articles/TagBadge';
 import { ArticleRow } from '@/components/articles/ArticleRow';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { ReadingProgress } from '@/components/articles/ReadingProgress';
 import { TableOfContents } from '@/components/articles/TableOfContents';
 import { SocialShare } from '@/components/articles/SocialShare';
+import { MatchRecapCover } from '@/components/articles/MatchRecapCover';
+import { PlayerRatingsCover } from '@/components/articles/PlayerRatingsCover';
 
-export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const slugs = await getAllSlugs();
-  return slugs.map((slug) => ({ slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
-  const article = await getArticleBySlug(params.slug);
-  if (!article) return { title: 'Article Not Found — South Ward Signal' };
+  const db = createAdminClient();
+  const { data: article, error } = await db
+    .from('articles')
+    .select('title, excerpt, featured_image, type')
+    .eq('slug', params.slug)
+    .eq('status', 'published')
+    .single();
+
+  if (error || !article) return { title: 'Article Not Found — South Ward Signal' };
+
+  const ogImage = article.featured_image
+    || `${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'https://southwardsignal.com' : 'http://localhost:3000'}/api/og?title=${encodeURIComponent(article.title)}&type=${encodeURIComponent(article.type || '')}`;
 
   return {
     title: `${article.title} — South Ward Signal`,
-    description: article.custom_excerpt || article.excerpt || '',
+    description: article.excerpt || '',
     openGraph: {
       title: article.title,
-      description: article.custom_excerpt || article.excerpt || '',
-      images: article.feature_image ? [article.feature_image] : [],
+      description: article.excerpt || '',
+      images: [ogImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.excerpt || '',
+      images: [ogImage],
     },
   };
 }
 
-/** Inject id attributes into h2/h3 tags for deep linking and ToC navigation */
 function addHeadingIds(html: string): string {
   let counter = 0;
-  return html.replace(/<(h[23])(.*?)>(.*?)<\/h[23]>/gi, (match, tag, attrs, content) => {
+  return html.replace(/<(h[23])(.*?)>(.*?)<\/h[23]>/gi, (_match, tag, attrs, content) => {
     const text = content.replace(/<[^>]*>/g, '');
     const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `heading-${counter++}`;
     return `<${tag}${attrs} id="${id}">${content}</${tag}>`;
@@ -43,30 +55,44 @@ function addHeadingIds(html: string): string {
 
 export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
-  const article = await getArticleBySlug(params.slug);
+  const db = createAdminClient();
 
-  if (!article) {
+  const { data: article, error } = await db
+    .from('articles')
+    .select('*')
+    .eq('slug', params.slug)
+    .eq('status', 'published')
+    .single();
+
+  if (error || !article) {
     notFound();
   }
 
-  // Fetch related articles (latest, excluding current)
-  const latest = await getLatestArticles(5);
-  const related = latest
-    .filter((a) => a.slug !== params.slug)
-    .slice(0, 4)
-    .map((a) => ({
-      slug: a.slug,
-      title: a.title,
-      primary_tag: a.primary_tag?.name || a.tags?.[0]?.name || 'Article',
-      published_at: a.published_at,
-    }));
+  // Fetch related articles
+  const { data: latestArticles } = await db
+    .from('articles')
+    .select('slug, title, type, published_at')
+    .eq('status', 'published')
+    .neq('slug', params.slug)
+    .order('published_at', { ascending: false })
+    .limit(4);
 
-  const primaryTag = article.primary_tag?.name || article.tags?.[0]?.name || '';
-  const date = new Date(article.published_at).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const related = (latestArticles ?? []).map((a) => ({
+    slug: a.slug,
+    title: a.title,
+    primary_tag: a.type || 'Article',
+    published_at: a.published_at || '',
+  }));
 
-  const articleHtml = article.html ? addHeadingIds(article.html) : '';
+  const primaryTag = article.type || '';
+  const date = article.published_at
+    ? new Date(article.published_at).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
+    : '';
+
+  const readingTime = Math.max(1, Math.round((article.word_count || 0) / 250));
+  const articleHtml = article.html_body ? addHeadingIds(article.html_body) : '';
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -100,27 +126,41 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
 
               <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-sws-500 mb-8">
                 <div className="flex items-center gap-4">
-                  <time>{date}</time>
+                  {date && <time>{date}</time>}
                   <span className="w-1 h-1 rounded-full bg-sws-600" />
-                  <span>{article.reading_time || 5} min read</span>
+                  <span>{readingTime} min read</span>
                 </div>
                 <span className="w-1 h-1 rounded-full bg-sws-600" />
                 <SocialShare title={article.title} slug={params.slug} />
               </div>
             </RevealOnScroll>
 
-            {/* Featured Image */}
-            {article.feature_image && (
+            {/* Featured Image or Match Recap Cover */}
+            {article.featured_image ? (
               <RevealOnScroll className="mb-10">
                 <div className="relative overflow-hidden rounded-xl aspect-[16/9]">
                   <img
-                    src={article.feature_image}
+                    src={article.featured_image}
                     alt={article.title}
                     className="w-full h-full object-cover"
                   />
                 </div>
               </RevealOnScroll>
-            )}
+            ) : article.type === 'match-recap' ? (
+              <RevealOnScroll className="mb-10">
+                <MatchRecapCover
+                  title={article.title}
+                  className="rounded-xl aspect-[16/9] border border-sws-700/50"
+                />
+              </RevealOnScroll>
+            ) : article.type === 'player-ratings' ? (
+              <RevealOnScroll className="mb-10">
+                <PlayerRatingsCover
+                  title={article.title}
+                  className="rounded-xl aspect-[16/9] border border-sws-700/50"
+                />
+              </RevealOnScroll>
+            ) : null}
 
             {/* Article Body */}
             <RevealOnScroll>
@@ -130,7 +170,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
               />
             </RevealOnScroll>
 
-            {/* AI Disclosure */}
+            {/* Disclaimer */}
             <RevealOnScroll>
               <div className="mt-16 pt-8 border-t border-sws-700/40">
                 <div className="bg-bg-elevated rounded-lg p-5 border border-sws-700/30">
@@ -142,10 +182,8 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
                       </svg>
                     </div>
                     <div>
-                      <p className="text-xs font-mono text-sws-400 uppercase tracking-widest mb-1">AI Transparency</p>
+                      <p className="text-xs font-mono text-sws-400 uppercase tracking-widest mb-1">Disclaimer</p>
                       <p className="text-sm text-sws-300 leading-relaxed">
-                        This article was generated by AI using real match data, advanced statistics, and publicly available information.
-                        All statistics are sourced from American Soccer Analysis, FBref, and official MLS data feeds.
                         South Ward Signal is an independent publication not affiliated with the New York Red Bulls or Major League Soccer.
                       </p>
                     </div>
@@ -154,7 +192,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
               </div>
             </RevealOnScroll>
 
-            {/* Related Coverage (visible on smaller screens where sidebar is hidden) */}
+            {/* Related Coverage (smaller screens) */}
             <div className="xl:hidden mt-12">
               <RevealOnScroll>
                 <div className="bg-bg-card border border-sws-700/50 rounded-xl p-5">
@@ -172,7 +210,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
           {/* Sidebar (XL screens) */}
           <aside className="hidden xl:block">
             <div className="sticky top-24 space-y-8">
-              <TableOfContents html={article.html || ''} />
+              <TableOfContents html={article.html_body || ''} />
               <RevealOnScroll direction="right" delay={0.2}>
                 <div className="bg-bg-card border border-sws-700/50 rounded-xl p-5">
                   <h3 className="text-xs font-mono text-sws-500 uppercase tracking-widest mb-4">Related Coverage</h3>

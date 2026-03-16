@@ -10,6 +10,7 @@ import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 const CONTENT_TYPES = [
   { label: 'All', tag: null },
   { label: 'Match Recap', tag: 'match-recap' },
+  { label: 'Player Ratings', tag: 'player-ratings' },
   { label: 'Preview', tag: 'preview' },
   { label: 'Tactical Analysis', tag: 'tactical-analysis' },
   { label: 'Player Spotlight', tag: 'player-spotlight' },
@@ -36,6 +37,16 @@ interface ArticleItem {
 
 export default function ArticlesPageClient({ articles }: { articles: ArticleItem[] }) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  // Only show filter pills for categories that have at least one article
+  const availableTypes = useMemo(() => {
+    return CONTENT_TYPES.filter((ct) => {
+      if (ct.tag === null) return true; // Always show "All"
+      return articles.some(
+        (a) => a.primary_tag_slug === ct.tag || a.tag_slugs.includes(ct.tag)
+      );
+    });
+  }, [articles]);
 
   const filtered = useMemo(() => {
     if (activeTag === null) return articles;
@@ -94,7 +105,7 @@ export default function ArticlesPageClient({ articles }: { articles: ArticleItem
             <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg to-transparent z-10 pointer-events-none md:hidden" />
 
             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mb-2">
-              {CONTENT_TYPES.map((ct) => {
+              {availableTypes.map((ct) => {
                 const isActive = activeTag === ct.tag;
                 return (
                   <button
@@ -136,7 +147,7 @@ export default function ArticlesPageClient({ articles }: { articles: ArticleItem
                   <ArticleCard key={article.slug} {...article} />
                 ))}
               </ArticleGrid>
-            ) : (
+            ) : !featured ? (
               <div className="text-center py-20">
                 <p className="text-sws-500 font-mono text-sm">
                   No articles found for this category yet.
@@ -148,7 +159,7 @@ export default function ArticlesPageClient({ articles }: { articles: ArticleItem
                   View all articles
                 </button>
               </div>
-            )}
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </div>

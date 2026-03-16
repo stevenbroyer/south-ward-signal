@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { TagBadge } from './TagBadge';
+import { MatchRecapCover } from './MatchRecapCover';
+import { PlayerRatingsCover } from './PlayerRatingsCover';
 import { formatDate } from '@/lib/utils';
 
 interface FeaturedArticleProps {
@@ -40,13 +42,17 @@ export function FeaturedArticle({
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* Image */}
           <div className="relative overflow-hidden aspect-[16/10] lg:aspect-auto">
-            {feature_image && (
+            {feature_image ? (
               <img
                 src={feature_image}
                 alt={title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-            )}
+            ) : (primary_tag === 'match-recap' || primary_tag === 'Match Recap') ? (
+              <MatchRecapCover title={title} className="w-full h-full" />
+            ) : (primary_tag === 'player-ratings' || primary_tag === 'Player Ratings') ? (
+              <PlayerRatingsCover title={title} className="w-full h-full" />
+            ) : null}
             <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/40 to-transparent lg:from-transparent lg:via-transparent lg:to-bg-card" />
             {primary_tag && (
               <div className="absolute top-4 left-4">

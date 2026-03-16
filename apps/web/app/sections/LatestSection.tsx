@@ -3,15 +3,28 @@
 import Link from 'next/link';
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
+import { MatchRecapCover } from '@/components/articles/MatchRecapCover';
+import { PlayerRatingsCover } from '@/components/articles/PlayerRatingsCover';
 
 const TAG_COLORS: Record<string, string> = {
+  'match-recap': '#ED1A3D',
   'Match Recap': '#ED1A3D',
+  'player-ratings': '#F97316',
+  'Player Ratings': '#F97316',
+  'pre-match-preview': '#3B82F6',
   'Preview': '#3B82F6',
+  'player-spotlight': '#D4A843',
   'Player Spotlight': '#D4A843',
+  'power-rankings': '#8B5CF6',
   'Power Rankings': '#8B5CF6',
+  'stat-of-week': '#F59E0B',
   'Stat of the Week': '#F59E0B',
+  'transfer-intel': '#10B981',
   'Transfer Intel': '#10B981',
+  'weekly-roundup': '#EC4899',
   'Weekly Roundup': '#EC4899',
+  'tactical-analysis': '#3B82F6',
+  'opinion': '#6B7280',
   'Article': '#6B7280',
 };
 
@@ -72,34 +85,20 @@ export function LatestSection({ articles }: LatestSectionProps) {
             transition={{ duration: 0.7, delay: 0.1 }}
           >
             <Link href={`/articles/${featured.slug}`} className="group block">
-              <div className="relative aspect-[16/10] bg-bg-card rounded-lg overflow-hidden mb-5 border border-sws-600/30 group-hover:border-red/40 group-hover:glow-red transition-all duration-500">
-                {/* Placeholder gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated via-bg-card to-bg opacity-80" />
-                <div className="absolute inset-0 grid-pattern opacity-20" />
-
-                {/* xG visualization bar */}
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-[10px] font-mono text-sws-400">RBNY</span>
-                        <span className="text-[10px] font-mono text-sws-white">2.81 xG</span>
-                      </div>
-                      <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-red rounded-full" style={{ width: '75%' }} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-[10px] font-mono text-sws-400">CHI</span>
-                        <span className="text-[10px] font-mono text-sws-white">0.94 xG</span>
-                      </div>
-                      <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-sws-400 rounded-full" style={{ width: '25%' }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="relative aspect-[16/10] bg-bg-card rounded-lg overflow-hidden mb-5 border border-sws-600/30 group-hover:border-red/40 transition-all duration-500">
+                {featured.feature_image ? (
+                  <img
+                    src={featured.feature_image}
+                    alt={featured.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (featured.primary_tag === 'match-recap' || featured.primary_tag === 'Match Recap') ? (
+                  <MatchRecapCover title={featured.title} className="w-full h-full" />
+                ) : (featured.primary_tag === 'player-ratings' || featured.primary_tag === 'Player Ratings') ? (
+                  <PlayerRatingsCover title={featured.title} className="w-full h-full" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated via-bg-card to-bg opacity-80" />
+                )}
 
                 {/* Tag overlay */}
                 <div className="absolute top-4 left-4">

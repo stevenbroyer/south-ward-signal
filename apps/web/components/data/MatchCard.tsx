@@ -1,15 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'motion/react';
-import { getTeamLogoUrl } from '@/lib/image-urls';
+
+function smLogo(teamId?: number) {
+  if (!teamId) return null;
+  return `https://cdn.sportmonks.com/images/soccer/teams/${teamId % 32}/${teamId}.png`;
+}
 
 interface MatchCardProps {
   id: string;
   date: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId?: number;
+  awayTeamId?: number;
   homeScore: number | null;
   awayScore: number | null;
   homeXg?: number;
@@ -24,6 +29,8 @@ export function MatchCard({
   date,
   homeTeam,
   awayTeam,
+  homeTeamId,
+  awayTeamId,
   homeScore,
   awayScore,
   homeXg,
@@ -32,7 +39,7 @@ export function MatchCard({
   venue,
   index = 0,
 }: MatchCardProps) {
-  const isNYRBHome = homeTeam.includes('Red Bulls');
+  const isNYRBHome = homeTeam.includes('Red Bull') || homeTeam.includes('New York RB');
   const isFinished = status === 'finished';
   const nybScore = isNYRBHome ? homeScore : awayScore;
   const oppScore = isNYRBHome ? awayScore : homeScore;
@@ -42,6 +49,9 @@ export function MatchCard({
     : 'D';
 
   const resultColor = result === 'W' ? 'border-success/30' : result === 'L' ? 'border-red/30' : result === 'D' ? 'border-gold/30' : 'border-sws-700/50';
+
+  const homeLogo = smLogo(homeTeamId);
+  const awayLogo = smLogo(awayTeamId);
 
   return (
     <motion.div
@@ -74,27 +84,33 @@ export function MatchCard({
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0 space-y-1">
-            <p className={`text-sm font-medium truncate inline-flex items-center gap-2 ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
-              {(() => { const logo = getTeamLogoUrl(homeTeam); return logo ? <Image src={logo} alt="" width={16} height={16} className="rounded-sm flex-shrink-0" unoptimized /> : null; })()}
-              {homeTeam}
-            </p>
-            <p className={`text-sm font-medium truncate inline-flex items-center gap-2 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
-              {(() => { const logo = getTeamLogoUrl(awayTeam); return logo ? <Image src={logo} alt="" width={16} height={16} className="rounded-sm flex-shrink-0" unoptimized /> : null; })()}
-              {awayTeam}
-            </p>
+        {/* Home team row */}
+        <div className="flex items-center justify-between py-1.5">
+          <div className={`flex items-center gap-2.5 min-w-0 ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+            {homeLogo && (
+              <img src={homeLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
+            )}
+            <span className="text-sm font-medium truncate">{homeTeam}</span>
           </div>
-
           {isFinished && (
-            <div className="text-right ml-4">
-              <p className={`text-lg font-mono font-bold ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
-                {homeScore}
-              </p>
-              <p className={`text-lg font-mono font-bold ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
-                {awayScore}
-              </p>
-            </div>
+            <span className={`text-lg font-mono font-bold ml-4 ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
+              {homeScore}
+            </span>
+          )}
+        </div>
+
+        {/* Away team row */}
+        <div className="flex items-center justify-between py-1.5">
+          <div className={`flex items-center gap-2.5 min-w-0 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>
+            {awayLogo && (
+              <img src={awayLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
+            )}
+            <span className="text-sm font-medium truncate">{awayTeam}</span>
+          </div>
+          {isFinished && (
+            <span className={`text-lg font-mono font-bold ml-4 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
+              {awayScore}
+            </span>
           )}
         </div>
 

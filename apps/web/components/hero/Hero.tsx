@@ -3,7 +3,6 @@
 import { motion } from 'motion/react';
 import dynamic from 'next/dynamic';
 import { HeroStats } from './HeroStats';
-import { NewsletterForm } from './NewsletterForm';
 
 const SoccerScene = dynamic(
   () => import('../three/SoccerScene').then((mod) => mod.SoccerScene),
@@ -32,61 +31,37 @@ function HeroFallback() {
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-end overflow-hidden">
+    <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* ── Background layers ── */}
       <div className="absolute inset-0 z-0">
         {/* Base dark */}
-        <div className="absolute inset-0 bg-bg" />
+        <div className="absolute inset-0 bg-bg pointer-events-none" />
 
-        {/* Three.js scene (replaces CSS smoke) */}
+        {/* Three.js scene (includes smoke plumes) */}
         <SoccerScene />
 
         {/* Noise / grain texture for grit */}
-        <div className="absolute inset-0 z-[2] noise-overlay" />
+        <div className="absolute inset-0 z-[2] noise-overlay pointer-events-none" />
 
         {/* Scanlines for that broadcast / terrace cam feel */}
-        <div className="absolute inset-0 z-[2] scanlines" />
+        <div className="absolute inset-0 z-[2] scanlines pointer-events-none" />
 
         {/* Bottom fade to content */}
-        <div className="absolute bottom-0 left-0 right-0 h-60 z-[3] bg-gradient-to-t from-bg via-bg/80 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-60 z-[3] bg-gradient-to-t from-bg via-bg/80 to-transparent pointer-events-none" />
       </div>
 
-      {/* ── Vertical red stripe — like a scarf or tifo banner ── */}
-      <motion.div
-        className="absolute left-[7%] top-0 bottom-0 w-[3px] z-[1]"
-        style={{ background: 'linear-gradient(180deg, transparent 0%, #ED1A3D 20%, #ED1A3D 80%, transparent 100%)' }}
-        initial={{ scaleY: 0, opacity: 0 }}
-        animate={{ scaleY: 1, opacity: 0.3 }}
-        transition={{ duration: 1.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      {/* ── Content scrim ── */}
+      <div className="absolute inset-0 z-[4] pointer-events-none"
+        style={{ background: 'linear-gradient(135deg, rgba(10,10,12,0.7) 0%, rgba(10,10,12,0.3) 40%, transparent 70%)' }}
       />
 
       {/* ── Content ── */}
-      <div className="relative z-10 max-w-container mx-auto px-6 pb-20 pt-40 w-full">
-        <div className="max-w-3xl">
-          {/* Status badge */}
-          <motion.div
-            className="flex items-center gap-3 mb-10"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red" />
-            </span>
-            <span className="text-[11px] font-mono text-sws-400 uppercase tracking-[0.25em]">
-              South Ward Signal
-            </span>
-            <span className="h-[1px] w-12 bg-sws-600" />
-            <span className="text-[11px] font-mono text-sws-500 uppercase tracking-[0.2em]">
-              Est. 2026
-            </span>
-          </motion.div>
-
+      <div className="relative z-10 max-w-container mx-auto px-6 pb-24 pt-16 w-full pointer-events-none">
+        <div className="max-w-3xl pointer-events-auto">
           {/* ── Main Headline ── */}
           <div className="mb-8">
             <motion.h1
-              className="font-display font-black leading-[0.95] tracking-tight"
+              className="font-display font-black leading-[0.95] tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"
               style={{ fontSize: 'clamp(4rem, 12vw, 9rem)' }}
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
@@ -94,13 +69,13 @@ export function Hero() {
             >
               <span className="block text-sws-white">Red</span>
               <span className="block text-sws-white">Runs</span>
-              <span className="block text-gradient">Deep.</span>
+              <span className="block text-gradient pb-[0.15em]">Deep.</span>
             </motion.h1>
           </div>
 
           {/* Subtitle */}
           <motion.p
-            className="text-lg md:text-xl text-sws-300 font-light leading-relaxed max-w-md mb-2"
+            className="text-lg md:text-xl text-sws-200 font-light leading-relaxed max-w-md mb-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
@@ -109,30 +84,19 @@ export function Hero() {
           </motion.p>
 
           <motion.p
-            className="text-sm text-sws-500 font-mono mb-10"
+            className="text-sm text-sws-400 font-mono mb-10 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 0.6 }}
           >
-            Match recaps, tactical breakdowns, and advanced analytics — from the South Ward to your screen.
+            Match recaps, commentary, player ratings, and advanced analytics. From the South Ward to your screen.
           </motion.p>
 
-          {/* Newsletter Form */}
-          <motion.div
-            className="mb-14"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.6, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            id="subscribe"
-          >
-            <NewsletterForm />
-          </motion.div>
-
-          {/* Stats */}
+          {/* Season Stats + Next Match */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.8, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ delay: 1.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
             <HeroStats />
           </motion.div>
@@ -141,7 +105,7 @@ export function Hero() {
 
       {/* ── Scroll indicator ── */}
       <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.2, duration: 0.6 }}

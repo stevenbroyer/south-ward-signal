@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { TagBadge } from './TagBadge';
+import { MatchRecapCover } from './MatchRecapCover';
+import { PlayerRatingsCover } from './PlayerRatingsCover';
 import { formatDate } from '@/lib/utils';
 
 interface ArticleCardProps {
@@ -31,8 +33,8 @@ export function ArticleCard({
         whileHover={{ y: -4 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Image */}
-        {feature_image && (
+        {/* Image or Match Recap Cover */}
+        {feature_image ? (
           <div className="relative overflow-hidden aspect-[16/9]">
             <img
               src={feature_image}
@@ -42,7 +44,11 @@ export function ArticleCard({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-bg-card/60 to-transparent" />
           </div>
-        )}
+        ) : primary_tag === 'match-recap' || primary_tag === 'Match Recap' ? (
+          <MatchRecapCover title={title} className="aspect-[16/9]" />
+        ) : primary_tag === 'player-ratings' || primary_tag === 'Player Ratings' ? (
+          <PlayerRatingsCover title={title} className="aspect-[16/9]" />
+        ) : null}
 
         {/* Content */}
         <div className="p-5">

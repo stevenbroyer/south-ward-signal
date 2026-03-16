@@ -22,7 +22,7 @@ export function LeagueClient({
 }: LeagueClientProps) {
   const tableRef = useRef(null);
   const tableInView = useInView(tableRef, { once: true, margin: '-40px' });
-  const isNYRB = (name: string) => name?.includes('Red Bulls');
+  const isNYRB = (name: string) => name?.includes('Red Bull') || name?.includes('New York RB');
 
   return (
     <div>
@@ -30,7 +30,7 @@ export function LeagueClient({
       <RevealOnScroll>
         <div ref={tableRef} className="bg-bg-card border border-sws-700/50 rounded-xl overflow-hidden mb-6">
           <div className="p-5 border-b border-sws-700/40">
-            <h3 className="font-display font-bold text-lg text-sws-white">Eastern Conference</h3>
+            <h3 className="font-display font-bold text-lg text-sws-white">MLS Standings</h3>
             <p className="text-xs font-mono text-sws-500 mt-1">Enhanced with xG data</p>
           </div>
 
@@ -133,7 +133,7 @@ export function LeagueClient({
               <tbody>
                 {topScorers.map((p: any, i: number) => (
                   <tr
-                    key={`${p.name}-${p.team}`}
+                    key={`${p.name}-${p.team}-${i}`}
                     className={`border-b border-sws-700/20 hover:bg-bg-elevated/50 ${
                       isNYRB(p.team) ? 'bg-red/5' : ''
                     }`}

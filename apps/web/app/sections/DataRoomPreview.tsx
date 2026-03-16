@@ -32,30 +32,30 @@ interface DataRoomPreviewProps {
   standingsData?: StandingProp[] | null;
 }
 
-function StatBar({ home, away, label, type }: { home: number; away: number; label: string; type: 'pct' | 'dec' | 'int' }) {
+function StatBar({ home, away, label, type, rbnyIsHome }: { home: number; away: number; label: string; type: 'pct' | 'dec' | 'int'; rbnyIsHome: boolean }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
-  const total = home + away;
-  const homeWidth = (home / total) * 100;
+  const total = (home || 0) + (away || 0) || 1;
+  const homeWidth = ((home || 0) / total) * 100;
 
   const fmt = (v: number) => type === 'dec' ? v.toFixed(2) : type === 'pct' ? `${v}%` : v.toString();
 
   return (
     <div ref={ref} className="py-2">
       <div className="flex justify-between text-xs mb-1.5">
-        <span className="font-mono text-sws-white">{fmt(home)}</span>
+        <span className={`font-mono ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{fmt(home)}</span>
         <span className="text-sws-400">{label}</span>
-        <span className="font-mono text-sws-300">{fmt(away)}</span>
+        <span className={`font-mono ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{fmt(away)}</span>
       </div>
       <div className="flex h-1 gap-0.5 rounded-full overflow-hidden">
         <motion.div
-          className="bg-red rounded-l-full"
+          className={`${rbnyIsHome ? 'bg-red' : 'bg-sws-500'} rounded-l-full`}
           initial={{ width: '50%' }}
           animate={isInView ? { width: `${homeWidth}%` } : {}}
           transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         />
         <motion.div
-          className="bg-sws-500 rounded-r-full"
+          className={`${!rbnyIsHome ? 'bg-red' : 'bg-sws-500'} rounded-r-full`}
           initial={{ width: '50%' }}
           animate={isInView ? { width: `${100 - homeWidth}%` } : {}}
           transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -79,16 +79,22 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
   const match = matchData;
   const standings = standingsData?.slice(0, 6) || [];
 
-  // Derive stat bars from match data
-  const stats: { label: string; home: number; away: number; type: 'pct' | 'dec' | 'int' }[] = match
-    ? [
-        { label: 'Possession', home: (match.stats as Record<string, Record<string, number>>)?.possession?.home ?? 50, away: (match.stats as Record<string, Record<string, number>>)?.possession?.away ?? 50, type: 'pct' },
-        { label: 'xG', home: Number(match.home_xg) || 0, away: Number(match.away_xg) || 0, type: 'dec' },
-        { label: 'Shots', home: (match.stats as Record<string, Record<string, number>>)?.shots?.home ?? 0, away: (match.stats as Record<string, Record<string, number>>)?.shots?.away ?? 0, type: 'int' },
-        { label: 'Shots on Target', home: (match.stats as Record<string, Record<string, number>>)?.shots_on_target?.home ?? 0, away: (match.stats as Record<string, Record<string, number>>)?.shots_on_target?.away ?? 0, type: 'int' },
-        { label: 'PPDA', home: (match.stats as Record<string, Record<string, number>>)?.ppda?.home ?? 0, away: (match.stats as Record<string, Record<string, number>>)?.ppda?.away ?? 0, type: 'dec' },
-      ]
-    : [];
+  // Always show RBNY on the left (red) side
+  const rbnyIsHome = match?.home_team?.includes('Red Bull') ?? true;
+  const rbnyTeam = rbnyIsHome ? match?.home_team : match?.away_team;
+  const oppTeam = rbnyIsHome ? match?.away_team : match?.home_team;
+  const rbnyScore = rbnyIsHome ? match?.home_score : match?.away_score;
+  const oppScore = rbnyIsHome ? match?.away_score : match?.home_score;
+
+  // Derive stat bars — home/away matches score layout, red bar = RBNY side
+  const s = match?.stats as Record<string, Record<string, number> | null> | undefined;
+  const stats: { label: string; home: number; away: number; type: 'pct' | 'dec' | 'int' }[] = [];
+  if (match) {
+    if (s?.possession) stats.push({ label: 'Possession', home: s.possession.home, away: s.possession.away, type: 'pct' });
+    if (match.home_xg != null && match.away_xg != null && (Number(match.home_xg) > 0 || Number(match.away_xg) > 0))
+      stats.push({ label: 'xG', home: Number(match.home_xg), away: Number(match.away_xg), type: 'dec' });
+    if (s?.shots) stats.push({ label: 'Shots', home: s.shots.home, away: s.shots.away, type: 'int' });
+  }
 
   const matchDateStr = match
     ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + (match.venue ? ` · ${match.venue}` : '')
@@ -118,7 +124,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
             href="/data-room"
             className="text-xs font-mono text-sws-500 hover:text-sws-white transition-colors flex items-center gap-2"
           >
-            ASA + FBREF DATA
+            EXPLORE
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" strokeWidth="1.5" />
             </svg>
@@ -138,18 +144,18 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
                 Recent Match
               </div>
 
-              {/* Score */}
+              {/* Score — home on left, away on right (standard soccer layout) */}
               <div className="flex items-center justify-center gap-8 mb-6">
                 <div className="text-right flex-1">
-                  <div className="text-sm font-semibold text-sws-white mb-1">{match.home_team}</div>
+                  <div className={`text-sm font-semibold mb-1 ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.home_team}</div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-4xl font-mono font-bold text-sws-white">{match.home_score ?? '-'}</span>
+                  <span className={`text-4xl font-mono font-bold ${rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.home_score ?? '-'}</span>
                   <span className="text-lg text-sws-500">-</span>
-                  <span className="text-4xl font-mono font-bold text-sws-300">{match.away_score ?? '-'}</span>
+                  <span className={`text-4xl font-mono font-bold ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.away_score ?? '-'}</span>
                 </div>
                 <div className="text-left flex-1">
-                  <div className="text-sm font-semibold text-sws-300 mb-1">{match.away_team}</div>
+                  <div className={`text-sm font-semibold mb-1 ${!rbnyIsHome ? 'text-sws-white' : 'text-sws-300'}`}>{match.away_team}</div>
                 </div>
               </div>
 
@@ -158,7 +164,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
               {/* Stat bars */}
               <div className="space-y-1">
                 {stats.map((stat) => (
-                  <StatBar key={stat.label} {...stat} />
+                  <StatBar key={stat.label} {...stat} rbnyIsHome={rbnyIsHome} />
                 ))}
               </div>
             </motion.div>
@@ -173,7 +179,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <div className="text-[10px] font-mono text-sws-500 uppercase tracking-widest mb-4">
-                Eastern Conference
+                MLS Standings
               </div>
 
               <table className="w-full">
@@ -191,7 +197,7 @@ export function DataRoomPreview({ matchData, standingsData }: DataRoomPreviewPro
                 </thead>
                 <tbody>
                   {standings.map((row, i) => {
-                    const isNYRB = row.team.includes('Red Bulls');
+                    const isNYRB = row.team.includes('Red Bull');
                     return (
                       <motion.tr
                         key={row.team}
