@@ -1,5 +1,7 @@
 'use client';
 
+import { displayName } from '@/lib/team-utils';
+
 interface H2HResult {
   homeTeam: string;
   awayTeam: string;
@@ -28,7 +30,7 @@ const SAMPLE_MATCHES: H2HResult[] = [
 ];
 
 export function H2HComparison({
-  homeTeam = 'New York Red Bulls',
+  homeTeam = 'RBNY',
   awayTeam = 'New York City FC',
   homeWins = 8,
   awayWins = 5,
@@ -42,8 +44,8 @@ export function H2HComparison({
   const drawPct = (draws / total) * 100;
   const awayPct = (awayWins / total) * 100;
 
-  const homeShort = homeTeam.split(' ').pop() || 'Home';
-  const awayShort = awayTeam.split(' ').pop() || 'Away';
+  const homeShort = displayName(homeTeam);
+  const awayShort = displayName(awayTeam);
 
   return (
     <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>

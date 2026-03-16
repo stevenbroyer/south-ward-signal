@@ -44,7 +44,7 @@ export function PlayerDetailClient({
               </p>
               <h2 className="font-display font-black text-3xl text-sws-white">{player.name}</h2>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-sm text-sws-400 font-mono">New York Red Bulls</p>
+                <p className="text-sm text-sws-400 font-mono">RBNY</p>
                 {player.nationality && (
                   <span className="text-xs font-mono text-sws-500">{player.nationality}</span>
                 )}
@@ -114,9 +114,9 @@ export function PlayerDetailClient({
                   {matchLog.map((m: any, i: number) => {
                     const match = m.matches;
                     const opponent = match
-                      ? (m.team?.includes('Red Bulls')
-                        ? (match.home_team?.includes('Red Bulls') ? match.away_team : match.home_team)
-                        : (match.home_team?.includes('Red Bulls') ? match.home_team : match.away_team))
+                      ? (m.team?.includes('Red Bull')
+                        ? (match.home_team?.includes('Red Bull') ? match.away_team : match.home_team)
+                        : (match.home_team?.includes('Red Bull') ? match.home_team : match.away_team))
                       : '—';
                     return (
                       <tr key={i} className="border-b border-sws-700/20 hover:bg-bg-elevated/50">

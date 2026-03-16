@@ -1,22 +1,46 @@
 'use client';
 
-interface TeamXg {
+import { isNYRB } from '@/lib/team-utils';
+
+interface TeamXgData {
   team: string;
-  xgFor: number;
-  xgAgainst: number;
-  goalsAdded: number;
-  points: number;
-  gamesPlayed: number;
+  team_id?: string;
+  xg_for_per90?: number;
+  xg_against_per90?: number;
+  xgFor?: number;
+  xgAgainst?: number;
+  gamesPlayed?: number;
+  is_rbny?: boolean;
+  logo_url?: string | null;
 }
 
 interface XgScatterProps {
-  data?: TeamXg[];
+  data?: TeamXgData[];
   highlightTeam?: string;
   className?: string;
 }
 
-export function XgScatter({ data = [], highlightTeam = 'New York Red Bulls', className = '' }: XgScatterProps) {
+export function XgScatter({ data = [], highlightTeam = 'New York RB', className = '' }: XgScatterProps) {
   if (!data.length) {
+    return (
+      <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
+        <h3 className="font-display font-bold text-lg text-sws-white mb-4">xG Landscape</h3>
+        <div className="h-[400px] flex items-center justify-center text-sws-500 text-sm font-mono">
+          No data available
+        </div>
+      </div>
+    );
+  }
+
+  // Normalize data — handle both pre-computed per90 and raw totals
+  const points = data.map((d) => {
+    const xPg = d.xg_for_per90 ?? (d.xgFor != null ? d.xgFor / Math.max(d.gamesPlayed || 1, 1) : 0);
+    const yPg = d.xg_against_per90 ?? (d.xgAgainst != null ? d.xgAgainst / Math.max(d.gamesPlayed || 1, 1) : 0);
+    const isRbny = d.is_rbny || d.team === highlightTeam || isNYRB(d.team);
+    return { team: d.team, xPg, yPg, isRbny };
+  }).filter((p) => !isNaN(p.xPg) && !isNaN(p.yPg));
+
+  if (!points.length) {
     return (
       <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
         <h3 className="font-display font-bold text-lg text-sws-white mb-4">xG Landscape</h3>
@@ -32,15 +56,17 @@ export function XgScatter({ data = [], highlightTeam = 'New York Red Bulls', cla
   const H = 400;
   const PAD = 50;
 
-  const xVals = data.map((d) => d.xgFor / Math.max(d.gamesPlayed, 1));
-  const yVals = data.map((d) => d.xgAgainst / Math.max(d.gamesPlayed, 1));
+  const xVals = points.map((p) => p.xPg);
+  const yVals = points.map((p) => p.yPg);
   const xMin = Math.floor(Math.min(...xVals) * 10) / 10 - 0.1;
   const xMax = Math.ceil(Math.max(...xVals) * 10) / 10 + 0.1;
   const yMin = Math.floor(Math.min(...yVals) * 10) / 10 - 0.1;
   const yMax = Math.ceil(Math.max(...yVals) * 10) / 10 + 0.1;
 
-  const scaleX = (v: number) => PAD + ((v - xMin) / (xMax - xMin)) * (W - 2 * PAD);
-  const scaleY = (v: number) => PAD + ((v - yMin) / (yMax - yMin)) * (H - 2 * PAD);
+  const rangeX = xMax - xMin || 1;
+  const rangeY = yMax - yMin || 1;
+  const scaleX = (v: number) => PAD + ((v - xMin) / rangeX) * (W - 2 * PAD);
+  const scaleY = (v: number) => PAD + ((v - yMin) / rangeY) * (H - 2 * PAD);
 
   const midX = scaleX((xMin + xMax) / 2);
   const midY = scaleY((yMin + yMax) / 2);
@@ -78,25 +104,22 @@ export function XgScatter({ data = [], highlightTeam = 'New York Red Bulls', cla
         </text>
 
         {/* Data points */}
-        {data.map((team) => {
-          const xPg = team.xgFor / Math.max(team.gamesPlayed, 1);
-          const yPg = team.xgAgainst / Math.max(team.gamesPlayed, 1);
-          const cx = scaleX(xPg);
-          const cy = scaleY(yPg);
-          const isHighlighted = team.team === highlightTeam;
+        {points.map((pt) => {
+          const cx = scaleX(pt.xPg);
+          const cy = scaleY(pt.yPg);
 
           return (
-            <g key={team.team}>
+            <g key={pt.team} aria-label={`${pt.team}: xGF/g ${pt.xPg.toFixed(2)}, xGA/g ${pt.yPg.toFixed(2)}`}>
               <circle
                 cx={cx}
                 cy={cy}
-                r={isHighlighted ? 8 : 5}
-                fill={isHighlighted ? '#ED1A3D' : '#44444F'}
-                fillOpacity={isHighlighted ? 0.9 : 0.5}
-                stroke={isHighlighted ? '#ED1A3D' : 'transparent'}
-                strokeWidth={isHighlighted ? 2 : 0}
+                r={pt.isRbny ? 8 : 5}
+                fill={pt.isRbny ? '#ED1A3D' : '#44444F'}
+                fillOpacity={pt.isRbny ? 0.9 : 0.5}
+                stroke={pt.isRbny ? '#ED1A3D' : 'transparent'}
+                strokeWidth={pt.isRbny ? 2 : 0}
               />
-              {isHighlighted && (
+              {pt.isRbny && (
                 <text
                   x={cx}
                   y={cy - 12}
@@ -109,7 +132,6 @@ export function XgScatter({ data = [], highlightTeam = 'New York Red Bulls', cla
                   NYRB
                 </text>
               )}
-              <title>{team.team} — xGF/g: {xPg.toFixed(2)} xGA/g: {yPg.toFixed(2)}</title>
             </g>
           );
         })}

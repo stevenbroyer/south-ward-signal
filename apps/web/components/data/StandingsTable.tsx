@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import Image from 'next/image';
 import { motion, useInView } from 'motion/react';
 import { FormBadge } from './FormBadge';
+import { displayName, isNYRB as checkNYRB } from '@/lib/team-utils';
 
 type FormResult = 'W' | 'D' | 'L';
 
@@ -43,7 +44,7 @@ interface StandingsTableProps {
 export function StandingsTable({ standings = SAMPLE_STANDINGS, className = '' }: StandingsTableProps) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-40px' });
-  const isNYRB = (name: string) => name.includes('Red Bull') || name.includes('New York RB');
+  const isNYRB = checkNYRB;
 
   return (
     <div ref={ref} className={`bg-bg-card border border-sws-700/50 rounded-xl overflow-hidden ${className}`}>
@@ -91,7 +92,7 @@ export function StandingsTable({ standings = SAMPLE_STANDINGS, className = '' }:
                         unoptimized
                       />
                     )}
-                    {row.team}
+                    {displayName(row.team)}
                   </span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs hidden sm:table-cell">{row.played}</td>

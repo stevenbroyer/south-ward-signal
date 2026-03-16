@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { motion, useInView } from 'motion/react';
+import { displayName } from '@/lib/team-utils';
 
 interface MatchScoreboardProps {
   homeTeam?: string;
@@ -52,7 +53,7 @@ function StatBar({ label, home, away, homeBarColor = 'bg-red', awayBarColor = 'b
 }
 
 export function MatchScoreboard({
-  homeTeam = 'New York Red Bulls',
+  homeTeam = 'RBNY',
   awayTeam = 'Philadelphia Union',
   homeScore = 2,
   awayScore = 1,
@@ -87,7 +88,7 @@ export function MatchScoreboard({
       {/* Score */}
       <div className="flex items-center justify-center gap-6 mb-8">
         <div className="text-right flex-1">
-          <p className={`font-display font-bold text-sm md:text-base ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{homeTeam}</p>
+          <p className={`font-display font-bold text-sm md:text-base ${isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{displayName(homeTeam)}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-4xl md:text-5xl font-mono font-bold ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{homeScore}</span>
@@ -95,7 +96,7 @@ export function MatchScoreboard({
           <span className={`text-4xl md:text-5xl font-mono font-bold ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>{awayScore}</span>
         </div>
         <div className="text-left flex-1">
-          <p className={`font-display font-bold text-sm md:text-base ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{awayTeam}</p>
+          <p className={`font-display font-bold text-sm md:text-base ${!isNYRBHome ? 'text-sws-white' : 'text-sws-400'}`}>{displayName(awayTeam)}</p>
         </div>
       </div>
 

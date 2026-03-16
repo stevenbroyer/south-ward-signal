@@ -9,6 +9,7 @@ import { XgRaceChart } from '@/components/data/XgRaceChart';
 import { FormStreak } from '@/components/data/FormStreak';
 import { PointsTrajectoryChart } from '@/components/data/PointsTrajectoryChart';
 import type { OverviewMetrics } from '@/lib/data-room-queries';
+import { isNYRB } from '@/lib/team-utils';
 import Link from 'next/link';
 
 interface MatchProps {
@@ -125,7 +126,7 @@ export function OverviewClient({
               possession={match.possession}
               shots={match.shots}
               xg={match.xg}
-              isNYRBHome={match.homeTeam.includes('Red Bull')}
+              isNYRBHome={isNYRB(match.homeTeam)}
             />
           ) : (
             <MatchScoreboard />

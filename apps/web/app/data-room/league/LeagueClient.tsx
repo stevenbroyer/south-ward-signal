@@ -6,6 +6,7 @@ import { motion, useInView } from 'motion/react';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 import { BumpChart } from '@/components/data/BumpChart';
 import { XgScatter } from '@/components/data/XgScatter';
+import { displayName, isNYRB as checkNYRB } from '@/lib/team-utils';
 
 interface LeagueClientProps {
   standings: any[];
@@ -22,7 +23,7 @@ export function LeagueClient({
 }: LeagueClientProps) {
   const tableRef = useRef(null);
   const tableInView = useInView(tableRef, { once: true, margin: '-40px' });
-  const isNYRB = (name: string) => name?.includes('Red Bull') || name?.includes('New York RB');
+  const isNYRB = checkNYRB;
 
   return (
     <div>
@@ -74,7 +75,7 @@ export function LeagueClient({
                             unoptimized
                           />
                         )}
-                        {row.team}
+                        {displayName(row.team)}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-center font-mono text-sws-400 text-xs">{row.games_played}</td>

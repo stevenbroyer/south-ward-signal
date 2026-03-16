@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
+import { displayName, isNYRB } from '@/lib/team-utils';
 
 function smLogo(teamId?: number) {
   if (!teamId) return null;
@@ -39,7 +40,7 @@ export function MatchCard({
   venue,
   index = 0,
 }: MatchCardProps) {
-  const isNYRBHome = homeTeam.includes('Red Bull') || homeTeam.includes('New York RB');
+  const isNYRBHome = isNYRB(homeTeam);
   const isFinished = status === 'finished';
   const nybScore = isNYRBHome ? homeScore : awayScore;
   const oppScore = isNYRBHome ? awayScore : homeScore;
@@ -90,7 +91,7 @@ export function MatchCard({
             {homeLogo && (
               <img src={homeLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
             )}
-            <span className="text-sm font-medium truncate">{homeTeam}</span>
+            <span className="text-sm font-medium truncate">{displayName(homeTeam)}</span>
           </div>
           {isFinished && (
             <span className={`text-lg font-mono font-bold ml-4 ${isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>
@@ -105,7 +106,7 @@ export function MatchCard({
             {awayLogo && (
               <img src={awayLogo} alt="" width={20} height={20} className="rounded-sm flex-shrink-0" />
             )}
-            <span className="text-sm font-medium truncate">{awayTeam}</span>
+            <span className="text-sm font-medium truncate">{displayName(awayTeam)}</span>
           </div>
           {isFinished && (
             <span className={`text-lg font-mono font-bold ml-4 ${!isNYRBHome ? 'text-sws-white' : 'text-sws-300'}`}>

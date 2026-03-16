@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { isNYRB } from '@/lib/team-utils';
 
 interface StandingsWeek {
   week: number;
@@ -40,7 +41,7 @@ interface BumpChartProps {
   className?: string;
 }
 
-export function BumpChart({ data = [], highlightTeam = 'New York Red Bulls', className = '' }: BumpChartProps) {
+export function BumpChart({ data = [], highlightTeam = 'New York RB', className = '' }: BumpChartProps) {
   if (!data.length) {
     return (
       <div className={`bg-bg-card border border-sws-700/50 rounded-xl p-5 ${className}`}>
@@ -92,7 +93,7 @@ export function BumpChart({ data = [], highlightTeam = 'New York Red Bulls', cla
             />
             <Tooltip content={<CustomTooltip />} />
             {teams.map((team) => {
-              const isHighlighted = team === highlightTeam;
+              const isHighlighted = team === highlightTeam || isNYRB(team);
               return (
                 <Line
                   key={team}
