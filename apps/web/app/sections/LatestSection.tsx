@@ -100,15 +100,17 @@ export function LatestSection({ articles }: LatestSectionProps) {
                   <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated via-bg-card to-bg opacity-80" />
                 )}
 
-                {/* Tag overlay */}
-                <div className="absolute top-4 left-4">
-                  <span
-                    className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded"
-                    style={{ backgroundColor: `${TAG_COLORS[featured.primary_tag] || TAG_COLORS.Article}20`, color: TAG_COLORS[featured.primary_tag] || TAG_COLORS.Article }}
-                  >
-                    {featured.primary_tag}
-                  </span>
-                </div>
+                {/* Tag overlay — hide when custom cover image exists */}
+                {!featured.feature_image && (
+                  <div className="absolute top-4 left-4">
+                    <span
+                      className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded"
+                      style={{ backgroundColor: `${TAG_COLORS[featured.primary_tag] || TAG_COLORS.Article}20`, color: TAG_COLORS[featured.primary_tag] || TAG_COLORS.Article }}
+                    >
+                      {featured.primary_tag}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <h3 className="text-xl md:text-2xl font-display font-bold text-sws-white group-hover:text-red transition-colors duration-300 mb-3">

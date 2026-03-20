@@ -81,38 +81,40 @@ export function FeaturedArticle({
               {excerpt}
             </p>
 
-            {/* Mini xG Bar */}
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center justify-between text-xs font-mono text-sws-400">
-                <span>RBNY xG</span>
-                <span className="text-red">{homeXg.toFixed(2)}</span>
+            {/* Mini xG Bar — only for match recaps with real data */}
+            {homeXg !== 1.82 && awayXg !== 0.95 && (
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center justify-between text-xs font-mono text-sws-400">
+                  <span>RBNY xG</span>
+                  <span className="text-red">{homeXg.toFixed(2)}</span>
+                </div>
+                <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-red rounded-full"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${(homeXg / (maxXg * 1.2)) * 100}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono text-sws-400">
+                  <span>OPP xG</span>
+                  <span className="text-sws-300">{awayXg.toFixed(2)}</span>
+                </div>
+                <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-sws-500 rounded-full"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${(awayXg / (maxXg * 1.2)) * 100}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
               </div>
-              <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-red rounded-full"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${(homeXg / (maxXg * 1.2)) * 100}%` }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs font-mono text-sws-400">
-                <span>OPP xG</span>
-                <span className="text-sws-300">{awayXg.toFixed(2)}</span>
-              </div>
-              <div className="h-1.5 bg-sws-700 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-sws-500 rounded-full"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${(awayXg / (maxXg * 1.2)) * 100}%` }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </div>
-            </div>
+            )}
 
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-red group-hover:text-accent transition-colors">
-              Read Full Analysis
+              Read Full Coverage
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
