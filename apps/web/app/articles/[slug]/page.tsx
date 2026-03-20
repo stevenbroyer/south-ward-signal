@@ -138,11 +138,11 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
             {/* Featured Image or Match Recap Cover */}
             {article.featured_image ? (
               <RevealOnScroll className="mb-10">
-                <div className="relative overflow-hidden rounded-xl aspect-[16/9]">
+                <div className="relative overflow-hidden rounded-xl">
                   <img
                     src={article.featured_image}
                     alt={article.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto rounded-xl"
                   />
                 </div>
               </RevealOnScroll>

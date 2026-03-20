@@ -54,7 +54,7 @@ export function FeaturedArticle({
               <PlayerRatingsCover title={title} className="w-full h-full" />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/40 to-transparent lg:from-transparent lg:via-transparent lg:to-bg-card" />
-            {primary_tag && (
+            {primary_tag && !feature_image && (
               <div className="absolute top-4 left-4">
                 <TagBadge tag={primary_tag} />
               </div>
