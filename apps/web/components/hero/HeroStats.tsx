@@ -2,11 +2,10 @@
 
 import { useRef, useEffect, useState } from 'react';
 
-const stats = [
-  { value: 2.81, label: 'RBNY xG', decimals: 2 },
-  { value: 142, label: 'PRESS ACT', decimals: 0 },
-  { value: 58, label: 'POSS %', decimals: 0, suffix: '%' },
-];
+interface HeroData {
+  record: { wins: number; draws: number; losses: number; points: number; position: number; gf: number; ga: number; form: string[] } | null;
+  nextMatch: { date: string; opponent: string; isHome: boolean } | null;
+}
 
 function useCountUp(target: number, duration: number, decimals: number, trigger: boolean) {
   const [value, setValue] = useState(0);
@@ -14,20 +13,14 @@ function useCountUp(target: number, duration: number, decimals: number, trigger:
   useEffect(() => {
     if (!trigger) return;
 
-    let start = 0;
     const startTime = performance.now();
 
     function update(currentTime: number) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / (duration * 1000), 1);
-
-      // Cubic ease-out
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Number((eased * target).toFixed(decimals)));
-
-      if (progress < 1) {
-        requestAnimationFrame(update);
-      }
+      if (progress < 1) requestAnimationFrame(update);
     }
 
     requestAnimationFrame(update);
@@ -36,9 +29,46 @@ function useCountUp(target: number, duration: number, decimals: number, trigger:
   return value;
 }
 
+function FormDots({ form }: { form: string[] }) {
+  return (
+    <div className="flex gap-1">
+      {form.slice(-5).map((r, i) => (
+        <span
+          key={i}
+          className={`w-2 h-2 rounded-full ${
+            r === 'W' ? 'bg-green-500' : r === 'D' ? 'bg-sws-400' : 'bg-red'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function formatMatchDate(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+  const dateFormatted = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days <= 7) return dateFormatted;
+  return dateFormatted;
+}
+
 export function HeroStats() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [data, setData] = useState<HeroData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/hero-stats')
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -49,42 +79,71 @@ export function HeroStats() {
     return () => observer.disconnect();
   }, []);
 
+  const rec = data?.record;
+  const next = data?.nextMatch;
+
+  // Fallback stats if no data yet
+  const stats = rec
+    ? [
+        { value: rec.points, label: 'PTS', decimals: 0 },
+        { value: rec.wins, label: 'W', decimals: 0 },
+        { value: rec.draws, label: 'D', decimals: 0 },
+        { value: rec.losses, label: 'L', decimals: 0 },
+        { value: rec.gf, label: 'GF', decimals: 0 },
+      ]
+    : [
+        { value: 0, label: 'PTS', decimals: 0 },
+        { value: 0, label: 'W', decimals: 0 },
+        { value: 0, label: 'D', decimals: 0 },
+        { value: 0, label: 'L', decimals: 0 },
+        { value: 0, label: 'GF', decimals: 0 },
+      ];
+
   return (
-    <div ref={ref} className="flex items-center gap-8 md:gap-12">
-      {stats.map((stat, i) => (
-        <div key={stat.label} className="flex items-center gap-8 md:gap-12">
-          {i > 0 && <div className="w-[1px] h-8 bg-sws-700" />}
-          <StatItem {...stat} trigger={visible} index={i} />
-        </div>
-      ))}
+    <div ref={ref} className="space-y-4">
+      {/* Season record */}
+      <div className="flex items-center gap-6 md:gap-8">
+        {stats.map((stat, i) => (
+          <div key={stat.label} className="flex items-center gap-6 md:gap-8">
+            {i > 0 && <div className="w-[1px] h-6 bg-sws-700" />}
+            <StatItem value={stat.value} label={stat.label} decimals={stat.decimals} trigger={visible} index={i} />
+          </div>
+        ))}
+      </div>
+
+      {/* Form + Next match */}
+      <div className="flex items-center gap-6 flex-wrap">
+        {rec?.form && rec.form.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-sws-500 uppercase tracking-wider">Form</span>
+            <FormDots form={rec.form} />
+          </div>
+        )}
+        {next && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-sws-500 uppercase tracking-wider">Next</span>
+            <span className="text-[11px] font-mono text-sws-300">
+              {next.isHome ? `vs ${next.opponent}` : `@ ${next.opponent}`}
+            </span>
+            <span className="text-[10px] font-mono text-sws-500">{formatMatchDate(next.date)}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function StatItem({
-  value: target,
-  label,
-  decimals,
-  suffix = '',
-  trigger,
-  index,
-}: {
-  value: number;
-  label: string;
-  decimals: number;
-  suffix?: string;
-  trigger: boolean;
-  index: number;
+function StatItem({ value: target, label, decimals, trigger, index }: {
+  value: number; label: string; decimals: number; trigger: boolean; index: number;
 }) {
-  const value = useCountUp(target, 1.2 + index * 0.2, decimals, trigger);
+  const value = useCountUp(target, 1.0 + index * 0.1, decimals, trigger);
 
   return (
     <div className="flex flex-col">
-      <span className="font-mono font-bold text-2xl md:text-3xl text-sws-white tabular-nums">
-        {decimals > 0 ? value.toFixed(decimals) : Math.round(value)}
-        <span className="text-red">{suffix}</span>
+      <span className="font-mono font-bold text-xl md:text-2xl text-sws-white tabular-nums">
+        {Math.round(value)}
       </span>
-      <span className="text-[10px] font-mono text-sws-500 uppercase tracking-[0.25em] mt-1">
+      <span className="text-[10px] font-mono text-sws-500 uppercase tracking-[0.2em]">
         {label}
       </span>
     </div>

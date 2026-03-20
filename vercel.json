@@ -2,5 +2,11 @@
   "buildCommand": "npm run build -w @sws/web",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/sync-espn",
+      "schedule": "0 7 * * *"
+    }
+  ]
 }

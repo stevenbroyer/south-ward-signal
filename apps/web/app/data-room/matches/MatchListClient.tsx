@@ -11,6 +11,8 @@ interface Match {
   date: string;
   home_team: string;
   away_team: string;
+  home_team_id?: number;
+  away_team_id?: number;
   home_score: number | null;
   away_score: number | null;
   home_xg: number | null;
@@ -58,7 +60,7 @@ export function MatchListClient({ matches: initialMatches, initialSeason }: Matc
   });
 
   const finished = matches.filter((m) => m.status === 'finished');
-  const upcoming = matches.filter((m) => m.status !== 'finished');
+  const upcoming = matches.filter((m) => m.status !== 'finished').reverse();
 
   return (
     <div>
@@ -116,6 +118,8 @@ export function MatchListClient({ matches: initialMatches, initialSeason }: Matc
                 date={m.date}
                 homeTeam={m.home_team}
                 awayTeam={m.away_team}
+                homeTeamId={m.home_team_id}
+                awayTeamId={m.away_team_id}
                 homeScore={m.home_score}
                 awayScore={m.away_score}
                 homeXg={m.home_xg ?? undefined}

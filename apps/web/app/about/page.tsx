@@ -3,123 +3,147 @@
 import { motion } from 'motion/react';
 import { RevealOnScroll } from '@/components/ui/RevealOnScroll';
 
-const coverageTypes = [
-  { icon: '01', title: 'Match Recaps', desc: 'Post-match analysis within hours, backed by xG, possession chains, and pressing data.' },
-  { icon: '02', title: 'Tactical Previews', desc: 'Pre-match breakdowns with predicted lineups, key matchups, and historical data.' },
-  { icon: '03', title: 'Player Spotlights', desc: 'Deep statistical profiles using radar charts, heat maps, and percentile rankings.' },
-  { icon: '04', title: 'Power Rankings', desc: 'Weekly Eastern Conference rankings driven by expected points models.' },
-  { icon: '05', title: 'Transfer Intel', desc: 'Data-driven scouting profiles for potential signings and squad analysis.' },
-  { icon: '06', title: 'Stat of the Week', desc: 'One standout metric explained in context — what it means and why it matters.' },
-];
-
 export default function AboutPage() {
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="max-w-container mx-auto px-6">
         {/* Header */}
         <RevealOnScroll>
-          <div className="mb-16">
+          <div className="mb-16 max-w-2xl">
             <p className="text-xs font-mono text-red uppercase tracking-widest mb-3">About</p>
-            <h1 className="font-display font-black text-4xl md:text-5xl text-sws-white">South Ward Signal</h1>
+            <h1 className="font-display font-black text-4xl md:text-5xl text-sws-white mb-6">
+              Built from the South Ward.
+            </h1>
+            <p className="text-sws-300 text-lg leading-relaxed">
+              Independent coverage of the New York Red Bulls that treats the club
+              like it actually matters. Because it does.
+            </p>
           </div>
         </RevealOnScroll>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Left — Mission */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+          {/* Left column */}
           <div>
             <RevealOnScroll>
-              <h2 className="font-display font-bold text-2xl text-sws-white mb-6">The Mission</h2>
               <div className="space-y-5 text-sws-300 leading-relaxed">
                 <p>
-                  South Ward Signal is independent, data-driven coverage of the New York Red Bulls.
-                  We combine advanced analytics with editorial storytelling to give supporters the
-                  analysis they deserve — fast, accurate, and transparent.
+                  ESPN gives MLS a paragraph on a good day. The Athletic covers maybe
+                  four clubs. Your local beat writer files copy that reads like a box score
+                  with adjectives. We got tired of it.
                 </p>
                 <p>
-                  Named after the supporters section at Red Bull Arena, this publication is built for
-                  the fans who care about the numbers behind the game. Every match recap includes xG
-                  breakdowns. Every preview is informed by statistical models. Every player profile
-                  is grounded in percentile rankings and advanced metrics.
+                  South Ward Signal is named after the supporters&apos; section at Red Bull
+                  Arena. Section 133 and the seats around it, where the drums don&apos;t stop
+                  and the scarves go up before kickoff. That&apos;s where this started: fans
+                  who wanted to understand what was happening on the pitch, not just react to it.
+                </p>
+                <p>
+                  So we built something. Match recaps that go beyond &quot;RBNY won 2-1&quot;
+                  and into why. Where the press broke down, which runs created space, what
+                  the xG tells us about a result the scoreline doesn&apos;t. Player analysis
+                  that looks at actual output, not reputation. Honest takes on signings,
+                  tactics, and front office decisions.
                 </p>
               </div>
             </RevealOnScroll>
 
             <RevealOnScroll delay={0.1}>
-              <h2 className="font-display font-bold text-2xl text-sws-white mb-6 mt-12">Our Approach</h2>
+              <h2 className="font-display font-bold text-xl text-sws-white mb-5 mt-12">
+                How we think about this
+              </h2>
               <div className="space-y-5 text-sws-300 leading-relaxed">
                 <p>
-                  We use data from American Soccer Analysis, FBref, and official MLS feeds to power
-                  our analysis. Articles are generated using AI models trained on soccer analytics,
-                  then verified against the underlying data before publication.
+                  If we make a claim, there&apos;s a number behind it. If the data isn&apos;t
+                  there, we say that too. We&apos;d rather publish nothing than publish something
+                  we can&apos;t back up.
                 </p>
                 <p>
-                  Speed matters. Match recaps go live within hours, not days. But accuracy matters
-                  more — every claim is backed by a number, every number is sourced, and every
-                  source is cited.
-                </p>
-              </div>
-            </RevealOnScroll>
-
-            <RevealOnScroll delay={0.2}>
-              <h2 className="font-display font-bold text-2xl text-sws-white mb-6 mt-12">AI Transparency</h2>
-              <div className="space-y-5 text-sws-300 leading-relaxed">
-                <p>
-                  South Ward Signal is upfront about its use of AI. Articles are AI-generated using
-                  real data and publicly available information. We believe AI can democratize sports
-                  journalism — giving smaller clubs the analytical coverage usually reserved for the
-                  biggest teams.
+                  We also think speed matters. A match recap that shows up three days later is
+                  useless. Ours go up fast, same night when possible, but we don&apos;t trade
+                  accuracy for it. Getting it right beats getting it first.
                 </p>
                 <p>
-                  Every article includes an AI disclosure. We never fabricate statistics. If we
-                  don&apos;t have the data, we say so. Transparency is non-negotiable.
+                  Arsenal has The Athletic, Tifo, and a dozen independent sites doing deep tactical
+                  work. RBNY deserves at least one. That&apos;s the gap we&apos;re filling.
                 </p>
               </div>
             </RevealOnScroll>
           </div>
 
-          {/* Right — Coverage Types */}
+          {/* Right column */}
           <div>
             <RevealOnScroll direction="right">
-              <h2 className="font-display font-bold text-2xl text-sws-white mb-8">What We Cover</h2>
+              <h2 className="font-display font-bold text-xl text-sws-white mb-8">
+                What you get
+              </h2>
             </RevealOnScroll>
 
-            <div className="space-y-4">
-              {coverageTypes.map((type, i) => (
-                <RevealOnScroll key={type.title} direction="right" delay={i * 0.08}>
-                  <motion.div
-                    className="bg-bg-card border border-sws-700/50 rounded-lg p-5 hover:border-sws-600/80 transition-colors group"
-                    whileHover={{ x: 4 }}
-                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="flex items-start gap-4">
-                      <span className="text-xs font-mono text-red/60 shrink-0 mt-1 w-6">{type.icon}</span>
-                      <div>
-                        <h3 className="font-display font-bold text-sws-white text-base group-hover:text-accent transition-colors">
-                          {type.title}
-                        </h3>
-                        <p className="text-sm text-sws-400 mt-1 leading-relaxed">{type.desc}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                </RevealOnScroll>
-              ))}
+            <div className="space-y-6">
+              <RevealOnScroll direction="right" delay={0.05}>
+                <div className="border-l-2 border-red/40 pl-5">
+                  <h3 className="font-display font-bold text-sws-white text-base mb-2">
+                    Match coverage
+                  </h3>
+                  <p className="text-sm text-sws-400 leading-relaxed">
+                    Post-match breakdowns with xG, possession chains, and what actually
+                    mattered. Pre-match previews with lineups, form, and the matchups
+                    worth watching.
+                  </p>
+                </div>
+              </RevealOnScroll>
+
+              <RevealOnScroll direction="right" delay={0.1}>
+                <div className="border-l-2 border-red/40 pl-5">
+                  <h3 className="font-display font-bold text-sws-white text-base mb-2">
+                    Player analysis
+                  </h3>
+                  <p className="text-sm text-sws-400 leading-relaxed">
+                    Statistical profiles, percentile rankings, and honest assessments. Not
+                    hype pieces. If a player is underperforming relative to their xG, we&apos;ll
+                    say so.
+                  </p>
+                </div>
+              </RevealOnScroll>
+
+              <RevealOnScroll direction="right" delay={0.15}>
+                <div className="border-l-2 border-red/40 pl-5">
+                  <h3 className="font-display font-bold text-sws-white text-base mb-2">
+                    The data room
+                  </h3>
+                  <p className="text-sm text-sws-400 leading-relaxed">
+                    Standings, match stats, player comparisons, and team performance
+                    metrics, all in one place. Updated after every match.
+                  </p>
+                </div>
+              </RevealOnScroll>
+
+              <RevealOnScroll direction="right" delay={0.2}>
+                <div className="border-l-2 border-red/40 pl-5">
+                  <h3 className="font-display font-bold text-sws-white text-base mb-2">
+                    Transfer intel
+                  </h3>
+                  <p className="text-sm text-sws-400 leading-relaxed">
+                    Scouting profiles and squad analysis when the windows open. Where does
+                    the roster have holes? Who fits the system? What does the money look like?
+                  </p>
+                </div>
+              </RevealOnScroll>
+
             </div>
 
-            {/* Data Sources */}
-            <RevealOnScroll direction="right" delay={0.5}>
-              <div className="mt-10 bg-bg-elevated rounded-lg p-5 border border-sws-700/30">
-                <p className="text-xs font-mono text-sws-500 uppercase tracking-widest mb-3">Data Sources</p>
-                <div className="flex flex-wrap gap-3">
-                  {['American Soccer Analysis', 'FBref', 'MLS API', 'API-Football', 'Opta'].map((src) => (
-                    <span key={src} className="text-xs font-mono text-sws-400 bg-bg-card px-3 py-1.5 rounded border border-sws-700/30">
-                      {src}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </RevealOnScroll>
           </div>
         </div>
+
+        {/* Bottom */}
+        <RevealOnScroll delay={0.2}>
+          <div className="mt-20 pt-12 border-t border-sws-700/30 max-w-2xl">
+            <p className="text-sws-500 text-sm leading-relaxed">
+              South Ward Signal is not affiliated with, endorsed by, or connected to
+              the New York Red Bulls, Red Bull GmbH, or Major League Soccer. We&apos;re
+              fans with opinions and a database.
+            </p>
+          </div>
+        </RevealOnScroll>
       </div>
     </div>
   );

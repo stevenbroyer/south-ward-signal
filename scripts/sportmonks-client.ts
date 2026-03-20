@@ -10,6 +10,7 @@ const BASE_URL = 'https://api.sportmonks.com/v3/football';
 export const MLS_LEAGUE_ID = 779;
 export const NWSL_LEAGUE_ID = 2328;
 export const RBNY_TEAM_ID = 383;
+export const RBNY_TEAM_IDS = [190, 383]; // 190 = "Red Bull New York" (2026+), 383 = "New York RB" (historical)
 
 // Stat type IDs → human-readable codes (from SportMonks types API)
 export const STAT_TYPES: Record<number, string> = {
@@ -256,7 +257,7 @@ export async function getStandings(seasonId: number) {
 /** Get team squad */
 export async function getTeamSquad(teamId: number) {
   const { data } = await smFetch(`/teams/${teamId}`, {
-    include: 'players',
+    include: 'players.player.position;players.player.detailedPosition;players.player.nationality',
   });
   return data;
 }

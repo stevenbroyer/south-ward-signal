@@ -29,10 +29,10 @@ interface PlayersClientProps {
 
 const POSITION_FILTERS = [
   { label: 'All', value: 'all' },
-  { label: 'FW', value: 'FW' },
-  { label: 'MF', value: 'MF' },
-  { label: 'DF', value: 'DF' },
-  { label: 'GK', value: 'GK' },
+  { label: 'FW', value: 'Forward' },
+  { label: 'MF', value: 'Midfielder' },
+  { label: 'DF', value: 'Defender' },
+  { label: 'GK', value: 'Goalkeeper' },
 ];
 
 export function PlayersClient({ players: initialPlayers, initialSeason }: PlayersClientProps) {
@@ -46,12 +46,16 @@ export function PlayersClient({ players: initialPlayers, initialSeason }: Player
     position: positionFilter,
   };
 
-  const { data: players = [], isFetching } = useQuery<Player[]>({
-    queryKey: ['players', filters],
-    queryFn: () => fetchPlayers(filters),
-    initialData: positionFilter === 'all' ? initialPlayers : undefined,
+  const { data: allPlayers = [], isFetching } = useQuery<Player[]>({
+    queryKey: ['players', { season }],
+    queryFn: () => fetchPlayers({ season }),
+    initialData: initialPlayers,
     staleTime: 5 * 60 * 1000,
   });
+
+  const players = positionFilter === 'all'
+    ? allPlayers
+    : allPlayers.filter((p) => p.position === positionFilter);
 
   return (
     <div>
@@ -95,7 +99,13 @@ export function PlayersClient({ players: initialPlayers, initialSeason }: Player
         </Link>
       </div>
 
-      <PlayerStatsTable players={players} />
+      {players.length > 0 ? (
+        <PlayerStatsTable players={players} />
+      ) : (
+        <div className="bg-bg-card border border-sws-700/50 rounded-xl p-8 text-center">
+          <p className="text-sws-400 text-sm font-mono">No players found for this position filter.</p>
+        </div>
+      )}
     </div>
   );
 }

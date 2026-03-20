@@ -1,22 +1,28 @@
-import { getLatestArticles } from '@/lib/ghost';
+import { createAdminClient } from '@/lib/supabase-auth';
 import ArticlesPageClient from './ArticlesPageClient';
 
 export const revalidate = 60;
 
 export default async function ArticlesPage() {
-  const articles = await getLatestArticles(50);
+  const db = createAdminClient();
 
-  // Normalize Ghost post shape to what the client component expects
-  const normalized = articles.map((a) => ({
+  const { data: articles } = await db
+    .from('articles')
+    .select('slug, title, excerpt, featured_image, type, tags, published_at, word_count')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(50);
+
+  const normalized = (articles ?? []).map((a) => ({
     slug: a.slug,
     title: a.title,
-    excerpt: a.custom_excerpt || a.excerpt || '',
-    feature_image: a.feature_image || '',
-    primary_tag: a.primary_tag?.name || a.tags?.[0]?.name || 'Article',
-    primary_tag_slug: a.primary_tag?.slug || a.tags?.[0]?.slug || '',
-    tag_slugs: (a.tags ?? []).map((t: { slug: string }) => t.slug),
-    published_at: a.published_at,
-    reading_time: a.reading_time || 5,
+    excerpt: a.excerpt || '',
+    feature_image: a.featured_image || '',
+    primary_tag: a.type || 'Article',
+    primary_tag_slug: a.type || '',
+    tag_slugs: a.tags || [],
+    published_at: a.published_at || '',
+    reading_time: Math.max(1, Math.round((a.word_count || 0) / 250)),
   }));
 
   return <ArticlesPageClient articles={normalized} />;

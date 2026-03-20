@@ -6,10 +6,17 @@
 import { supabase } from './supabase';
 
 const isConfigured = !!supabase;
-const RBNY_TEAM_ID = 383;
 
-// MLS season IDs from SportMonks (populated by sync)
-// We look up by year → sm_seasons table
+// RBNY has two SportMonks team IDs:
+// - 190: "Red Bull New York" — used in 2026+ (current naming)
+// - 383: "New York RB" — used in historical seasons (2020-2025)
+const RBNY_TEAM_IDS = [190, 383];
+const RBNY_TEAM_ID = 190; // Primary ID for backward compat
+
+/** Build an OR filter matching RBNY on a given column for both team IDs */
+function rbnyFilter(col: string): string {
+  return RBNY_TEAM_IDS.map((id) => `${col}.eq.${id}`).join(',');
+}
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -19,15 +26,18 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-/** Get SportMonks season ID for a given year */
+/** Get SportMonks season ID for a given year.
+ *  Prefers is_current=true; handles duplicate seasons gracefully. */
 async function getSeasonId(year: number): Promise<number | null> {
   const { data } = await supabase
     .from('sm_seasons')
-    .select('id')
+    .select('id, is_current')
     .eq('year', year)
     .eq('league_id', 779)
-    .single();
-  return data?.id || null;
+    .order('is_current', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(1);
+  return data?.[0]?.id || null;
 }
 
 // ── Overview ────────────────────────────────────────────────────
@@ -57,13 +67,14 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
     const seasonId = await getSeasonId(season);
     if (!seasonId) return EMPTY_OVERVIEW;
 
-    // Get standings for RBNY
-    const { data: standing } = await supabase
+    // Get standings for RBNY (may match multiple team IDs)
+    const { data: standingsArr } = await supabase
       .from('sm_standings')
       .select('*')
       .eq('season_id', seasonId)
-      .eq('team_id', RBNY_TEAM_ID)
-      .single();
+      .in('team_id', RBNY_TEAM_IDS)
+      .limit(1);
+    const standing = standingsArr?.[0] || null;
 
     // Get RBNY fixtures for the season to compute form
     const { data: fixtures } = await supabase
@@ -71,12 +82,12 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
       .select('id, home_team_id, away_team_id, home_score, away_score, state')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: false })
       .limit(10);
 
     const form = (fixtures || []).map((f) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = isHome ? f.home_score : f.away_score;
       const ga = isHome ? f.away_score : f.home_score;
       if ((gf ?? 0) > (ga ?? 0)) return 'W';
@@ -92,7 +103,7 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
       .select('id, home_team_id')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
     let xgFor = 0;
     let xgAgainst = 0;
@@ -106,7 +117,7 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
 
       for (const s of xgStats || []) {
         const fixture = allFixtures.find((f) => f.id === s.fixture_id);
-        const isRbny = s.team_id === RBNY_TEAM_ID;
+        const isRbny = RBNY_TEAM_IDS.includes(s.team_id);
         if (s.stat_code === 'expected-goals' && isRbny) xgFor += Number(s.value) || 0;
         if (s.stat_code === 'expected-goals' && !isRbny) xgAgainst += Number(s.value) || 0;
       }
@@ -125,9 +136,9 @@ export async function getOverviewMetrics(season = 2026): Promise<OverviewMetrics
         .select('home_team_id, home_score, away_score')
         .eq('season_id', seasonId)
         .eq('state', 'FT')
-        .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+        .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
       for (const f of allFull.data || []) {
-        const isHome = f.home_team_id === RBNY_TEAM_ID;
+        const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
         goalsFor += (isHome ? f.home_score : f.away_score) ?? 0;
         goalsAgainst += (isHome ? f.away_score : f.home_score) ?? 0;
       }
@@ -161,7 +172,7 @@ export async function getSeasonXgRace(season = 2026) {
       .select('id, starting_at, home_team_id, away_team_id, home_team_name, away_team_name, home_score, away_score')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: true });
 
     if (!fixtures?.length) return [];
@@ -178,7 +189,7 @@ export async function getSeasonXgRace(season = 2026) {
     for (const s of xgStats || []) {
       if (!xgMap.has(s.fixture_id)) xgMap.set(s.fixture_id, { for: 0, against: 0 });
       const entry = xgMap.get(s.fixture_id)!;
-      if (s.team_id === RBNY_TEAM_ID) entry.for = Number(s.value) || 0;
+      if (RBNY_TEAM_IDS.includes(s.team_id)) entry.for = Number(s.value) || 0;
       else entry.against = Number(s.value) || 0;
     }
 
@@ -186,7 +197,7 @@ export async function getSeasonXgRace(season = 2026) {
     let cumXgAgainst = 0;
 
     return fixtures.map((f, i) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = (isHome ? f.home_score : f.away_score) ?? 0;
       const ga = (isHome ? f.away_score : f.home_score) ?? 0;
       const xg = xgMap.get(f.id);
@@ -220,12 +231,12 @@ export async function getFormStreak(season = 2026, limit = 10) {
       .select('id, starting_at, home_team_id, away_team_id, home_team_name, away_team_name, home_score, away_score')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: false })
       .limit(limit);
 
     return (data || []).reverse().map((f) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = (isHome ? f.home_score : f.away_score) ?? 0;
       const ga = (isHome ? f.away_score : f.home_score) ?? 0;
       return {
@@ -252,13 +263,13 @@ export async function getPointsTrajectory(season = 2026) {
       .select('id, starting_at, home_team_id, away_team_id, home_score, away_score')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: true });
 
     if (!data) return [];
     let cumPoints = 0;
     return data.map((f, i) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = (isHome ? f.home_score : f.away_score) ?? 0;
       const ga = (isHome ? f.away_score : f.home_score) ?? 0;
       const result = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
@@ -267,8 +278,8 @@ export async function getPointsTrajectory(season = 2026) {
       return {
         matchweek: mw,
         points: cumPoints,
-        playoffPace: +(mw * 1.5).toFixed(1),
-        shieldPace: +(mw * 2.0).toFixed(1),
+        playoffPace: +(mw * 1.38).toFixed(1), // ~47 pts / 34 games
+        shieldPace: +(mw * 2.0).toFixed(1),  // ~68 pts / 34 games
       };
     });
   }, []);
@@ -293,7 +304,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
       .select('id')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
     const fIds = (seasonFixtures || []).map((f) => f.id);
     if (!fIds.length) return [];
@@ -312,7 +323,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
       .from('sm_lineup_stats')
       .select('player_id, value')
       .in('fixture_id', fIds)
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .eq('stat_code', 'assists');
 
     const assistMap = new Map<number, number>();
@@ -325,7 +336,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
       .from('sm_lineup_stats')
       .select('player_id, value')
       .in('fixture_id', fIds)
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .eq('stat_code', 'minutes-played');
 
     const minuteMap = new Map<number, number>();
@@ -338,7 +349,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
       .from('sm_lineups')
       .select('player_id')
       .in('fixture_id', fIds)
-      .eq('team_id', RBNY_TEAM_ID);
+      .in('team_id', RBNY_TEAM_IDS);
 
     const appMap = new Map<number, number>();
     for (const a of appearances || []) {
@@ -349,7 +360,7 @@ export async function getTopPerformers(season = 2026, limit = 3) {
     const { data: playerInfo } = await supabase
       .from('sm_players')
       .select('id, common_name, name, position, image_path')
-      .eq('team_id', RBNY_TEAM_ID);
+      .in('team_id', RBNY_TEAM_IDS);
 
     const playerMap = new Map((playerInfo || []).map((p) => [p.id, p]));
 
@@ -397,7 +408,7 @@ export async function getMatchList(season = 2026) {
       .from('sm_fixtures')
       .select('*')
       .eq('season_id', seasonId)
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: false });
 
     // Get xG for all fixtures
@@ -418,6 +429,8 @@ export async function getMatchList(season = 2026) {
       date: f.starting_at,
       home_team: f.home_team_name,
       away_team: f.away_team_name,
+      home_team_id: f.home_team_id,
+      away_team_id: f.away_team_id,
       home_score: f.home_score,
       away_score: f.away_score,
       home_xg: xgMap.get(`${f.id}-${f.home_team_id}`) || 0,
@@ -600,7 +613,7 @@ export async function getPlayerList(season = 2026) {
     const { data: players } = await supabase
       .from('sm_players')
       .select('*')
-      .eq('team_id', RBNY_TEAM_ID);
+      .in('team_id', RBNY_TEAM_IDS);
 
     if (!players?.length) return [];
 
@@ -618,20 +631,30 @@ export async function getPlayerList(season = 2026) {
         .select('id')
         .eq('season_id', seasonId)
         .eq('state', 'FT')
-        .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+        .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
       const fixtureIds = (seasonFixtures || []).map((f) => f.id);
 
       if (fixtureIds.length > 0) {
-        // Count appearances from lineups
+        // Count appearances from lineups + collect player names
         const { data: lineups } = await supabase
           .from('sm_lineups')
-          .select('player_id, fixture_id')
+          .select('player_id, fixture_id, player_name')
           .in('fixture_id', fixtureIds)
-          .eq('team_id', RBNY_TEAM_ID);
+          .in('team_id', RBNY_TEAM_IDS);
 
+        const lineupNameMap = new Map<number, string>();
         for (const lu of lineups || []) {
           appearanceMap.set(lu.player_id, (appearanceMap.get(lu.player_id) || 0) + 1);
+          if (lu.player_name && !lineupNameMap.has(lu.player_id)) {
+            lineupNameMap.set(lu.player_id, lu.player_name);
+          }
+        }
+        // Backfill "Unknown" player names from lineup data
+        for (const p of players) {
+          if ((!p.name || p.name === 'Unknown') && lineupNameMap.has(p.id)) {
+            (p as any).name = lineupNameMap.get(p.id);
+          }
         }
 
         // Get aggregated player stats from lineup_stats
@@ -639,7 +662,7 @@ export async function getPlayerList(season = 2026) {
           .from('sm_lineup_stats')
           .select('player_id, stat_code, value')
           .in('fixture_id', fixtureIds)
-          .eq('team_id', RBNY_TEAM_ID);
+          .in('team_id', RBNY_TEAM_IDS);
 
         // Aggregate per player
         const playerAgg = new Map<number, Record<string, number>>();
@@ -680,41 +703,48 @@ export async function getPlayerList(season = 2026) {
       }
     }
 
-    return players.map((p) => {
-      const agg = (p as any)._agg || {};
-      const name = p.common_name || p.name;
-      return {
-        id: String(p.id),
-        name,
-        team: 'New York RB',
-        position: p.position || p.detailed_position || 'Unknown',
-        season,
-        games_played: appearanceMap.get(p.id) || 0,
-        minutes: agg['minutes-played'] || (appearanceMap.get(p.id) || 0) * 90,
-        goals: goalMap.get(name) || goalMap.get(p.name) || 0,
-        assists: assistMap.get(name) || 0,
-        xg: 0,
-        xa: 0,
-        goals_added: null,
-        key_passes: agg['key-passes'] || null,
-        tackles_won: agg['tackles-won'] || agg['tackles'] || null,
-        interceptions: agg['interceptions'] || null,
-        pass_completion: agg['accurate-passes-pct'] ? +(agg['accurate-passes-pct'] / (appearanceMap.get(p.id) || 1)).toFixed(0) : null,
-        image_url: p.image_path,
-      };
-    });
+    return players
+      .filter((p) => {
+        // Only show players who actually appeared in a match or have a real name
+        const name = p.common_name || p.name;
+        return name && name !== 'Unknown' && appearanceMap.has(p.id);
+      })
+      .map((p) => {
+        const agg = (p as any)._agg || {};
+        const name = p.common_name || p.name;
+        return {
+          id: String(p.id),
+          name,
+          team: 'New York RB',
+          position: p.position || p.detailed_position || '—',
+          season,
+          games_played: appearanceMap.get(p.id) || 0,
+          minutes: agg['minutes-played'] || (appearanceMap.get(p.id) || 0) * 90,
+          goals: goalMap.get(name) || goalMap.get(p.name) || 0,
+          assists: assistMap.get(name) || 0,
+          xg: 0,
+          xa: 0,
+          goals_added: null,
+          key_passes: agg['key-passes'] || null,
+          tackles_won: agg['tackles-won'] || agg['tackles'] || null,
+          interceptions: agg['interceptions'] || null,
+          pass_completion: agg['accurate-passes-pct'] ? +(agg['accurate-passes-pct'] / (appearanceMap.get(p.id) || 1)).toFixed(0) : null,
+          image_url: p.image_path,
+        };
+      });
   }, []);
 }
 
 export async function getPlayerDetail(playerName: string, _season = 2026) {
   if (!isConfigured) return null;
   return safeQuery(async () => {
-    const { data } = await supabase
+    const { data: playerArr } = await supabase
       .from('sm_players')
       .select('*')
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .or(`common_name.eq.${playerName},name.ilike.%${playerName}%`)
-      .single();
+      .limit(1);
+    const data = playerArr?.[0] || null;
 
     if (!data) return null;
 
@@ -731,7 +761,7 @@ export async function getPlayerDetail(playerName: string, _season = 2026) {
         .select('id')
         .eq('season_id', seasonId)
         .eq('state', 'FT')
-        .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+        .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
       const fIds = (seasonFixtures || []).map((f) => f.id);
       if (fIds.length > 0) {
@@ -845,12 +875,13 @@ export async function getPlayerSeasonHistory(playerName: string) {
   if (!isConfigured) return [];
   return safeQuery(async () => {
     // Find the player
-    const { data: player } = await supabase
+    const { data: playerArr } = await supabase
       .from('sm_players')
       .select('id')
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .or(`common_name.eq.${playerName},name.ilike.%${playerName}%`)
-      .single();
+      .limit(1);
+    const player = playerArr?.[0] || null;
 
     if (!player) return [];
 
@@ -876,7 +907,7 @@ export async function getPlayerSeasonHistory(playerName: string) {
         .select('id')
         .eq('season_id', season.id)
         .eq('state', 'FT')
-        .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+        .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
       const fIds = (seasonFixtures || []).map((f) => f.id);
       if (!fIds.length) continue;
@@ -938,7 +969,7 @@ export async function getPlayersForCompare(playerNames: string[], _season = 2026
     const { data } = await supabase
       .from('sm_players')
       .select('*')
-      .eq('team_id', RBNY_TEAM_ID);
+      .in('team_id', RBNY_TEAM_IDS);
 
     const matched = (data || []).filter((p) =>
       playerNames.some((n) => (p.common_name || p.name) === n || p.name.includes(n))
@@ -958,7 +989,7 @@ export async function getPlayersForCompare(playerNames: string[], _season = 2026
       .select('id')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
     const fIds = (seasonFixtures || []).map((f) => f.id);
     if (!fIds.length) return matched.map((p) => ({
@@ -1042,7 +1073,7 @@ export async function getTeamMatchTrends(season = 2026) {
       .select('*')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: true });
 
     if (!fixtures?.length) return [];
@@ -1053,7 +1084,7 @@ export async function getTeamMatchTrends(season = 2026) {
       .from('sm_fixture_stats')
       .select('fixture_id, team_id, stat_code, value')
       .in('fixture_id', fixtureIds)
-      .eq('team_id', RBNY_TEAM_ID);
+      .in('team_id', RBNY_TEAM_IDS);
 
     const statsMap = new Map<number, Record<string, number>>();
     for (const s of allStats || []) {
@@ -1066,7 +1097,7 @@ export async function getTeamMatchTrends(season = 2026) {
       .from('sm_fixture_stats')
       .select('fixture_id, team_id, value')
       .in('fixture_id', fixtureIds)
-      .neq('team_id', RBNY_TEAM_ID)
+      .not('team_id', 'in', `(${RBNY_TEAM_IDS.join(',')})`)
       .eq('stat_code', 'expected-goals');
 
     const oppXgMap = new Map<number, number>();
@@ -1075,7 +1106,7 @@ export async function getTeamMatchTrends(season = 2026) {
     }
 
     return fixtures.map((f) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = (isHome ? f.home_score : f.away_score) ?? 0;
       const ga = (isHome ? f.away_score : f.home_score) ?? 0;
       const stats = statsMap.get(f.id) || {};
@@ -1117,6 +1148,7 @@ export async function getHomeAwaySplit(season = 2026) {
         goalsAgainst: matches.reduce((s, m) => s + m.goals_against, 0),
         avgXgFor: +(matches.reduce((s, m) => s + m.xg_for, 0) / count).toFixed(2),
         avgXgAgainst: +(matches.reduce((s, m) => s + m.xg_against, 0) / count).toFixed(2),
+        avgPossession: +(matches.reduce((s, m) => s + (m.possession || 0), 0) / count).toFixed(1),
         cleanSheets: matches.filter((m) => m.clean_sheet).length,
       };
     };
@@ -1376,16 +1408,16 @@ export async function getLeagueXgScatter(season = 2026) {
 
     const teamMap = new Map((teams || []).map((t) => [t.id, t]));
 
-    return teamIds.map((tid) => {
-      const t = teamMap.get(tid);
+    return teamIds.filter((tid) => teamMap.has(tid)).map((tid) => {
+      const t = teamMap.get(tid)!;
       const xg = teamXg.get(tid)!;
       const games = xg.games || 1;
       return {
-        team: t?.name || 'Unknown',
+        team: t.name,
         team_id: String(tid),
         xg_for_per90: +(xg.xgFor / games).toFixed(2),
         xg_against_per90: +(xg.xgAgainst / games).toFixed(2),
-        is_rbny: tid === RBNY_TEAM_ID,
+        is_rbny: RBNY_TEAM_IDS.includes(tid),
         logo_url: t?.logo_path || null,
       };
     });
@@ -1409,8 +1441,9 @@ export async function getTopScorers(season = 2026, limit = 20) {
 
     const scorers = new Map<string, { name: string; team: string; goals: number; teamId: number }>();
     for (const g of goals) {
+      if (!g.player_name) continue;
       const key = `${g.player_name}-${g.team_id}`;
-      const existing = scorers.get(key) || { name: g.player_name || 'Unknown', team: '', goals: 0, teamId: g.team_id };
+      const existing = scorers.get(key) || { name: g.player_name, team: '', goals: 0, teamId: g.team_id };
       existing.goals++;
       scorers.set(key, existing);
     }
@@ -1451,7 +1484,7 @@ export async function getMultiSeasonTeamStats(_startSeason = 2016, _endSeason = 
     const { data } = await supabase
       .from('sm_standings')
       .select('*, sm_seasons!inner(year)')
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .order('sm_seasons.year', { ascending: true } as any);
 
     // Also get per-season xG totals for RBNY
@@ -1461,7 +1494,7 @@ export async function getMultiSeasonTeamStats(_startSeason = 2016, _endSeason = 
       .select('id, season_id')
       .in('season_id', seasonIds)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
     const seasonXg = new Map<number, { xgFor: number; xgAgainst: number }>();
     if (rbnyFixtures?.length) {
@@ -1478,7 +1511,7 @@ export async function getMultiSeasonTeamStats(_startSeason = 2016, _endSeason = 
         if (!sid) continue;
         if (!seasonXg.has(sid)) seasonXg.set(sid, { xgFor: 0, xgAgainst: 0 });
         const entry = seasonXg.get(sid)!;
-        if (s.team_id === RBNY_TEAM_ID) entry.xgFor += Number(s.value) || 0;
+        if (RBNY_TEAM_IDS.includes(s.team_id)) entry.xgFor += Number(s.value) || 0;
         else entry.xgAgainst += Number(s.value) || 0;
       }
     }
@@ -1514,7 +1547,95 @@ export async function getAllTimePlayerContributions(): Promise<Array<{
   games_played: number;
   team: string;
 }>> {
-  return [];
+  if (!isConfigured) return [];
+  return safeQuery(async () => {
+    // Get all RBNY fixtures across all seasons
+    const { data: fixtures } = await supabase
+      .from('sm_fixtures')
+      .select('id, season_id, sm_seasons!inner(year)')
+      .eq('state', 'FT')
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
+
+    if (!fixtures?.length) return [];
+
+    const fixtureIds = fixtures.map((f) => f.id);
+    const seasonMap = new Map<number, number>();
+    for (const f of fixtures) {
+      seasonMap.set(f.id, (f as any).sm_seasons?.year || 0);
+    }
+
+    // Get all RBNY player lineups across those fixtures
+    const { data: lineups } = await supabase
+      .from('sm_lineups')
+      .select('fixture_id, player_id, player_name')
+      .in('team_id', RBNY_TEAM_IDS)
+      .in('fixture_id', fixtureIds);
+
+    if (!lineups?.length) return [];
+
+    // Get goals from events
+    const { data: goals } = await supabase
+      .from('sm_events')
+      .select('fixture_id, player_name')
+      .eq('event_type', 'goal')
+      .in('fixture_id', fixtureIds);
+
+    // Get lineup stats (minutes, assists, xG)
+    const playerIds = [...new Set(lineups.map((l) => l.player_id))];
+    const { data: stats } = await supabase
+      .from('sm_lineup_stats')
+      .select('fixture_id, player_id, stat_code, value')
+      .in('fixture_id', fixtureIds)
+      .in('player_id', playerIds)
+      .in('stat_code', ['minutes-played', 'assists', 'expected-goals']);
+
+    // Aggregate per player per season
+    const agg = new Map<string, {
+      player_name: string; season: number; goals: number; assists: number;
+      xg: number; minutes: number; games_played: number;
+    }>();
+
+    for (const lu of lineups) {
+      const season = seasonMap.get(lu.fixture_id) || 0;
+      if (!season) continue;
+      const key = `${lu.player_name}__${season}`;
+      if (!agg.has(key)) {
+        agg.set(key, { player_name: lu.player_name, season, goals: 0, assists: 0, xg: 0, minutes: 0, games_played: 0 });
+      }
+      agg.get(key)!.games_played++;
+    }
+
+    for (const g of (goals || [])) {
+      // Find matching RBNY lineup for this goal's fixture
+      const lu = lineups.find((l) => l.fixture_id === g.fixture_id && l.player_name === g.player_name);
+      if (!lu) continue;
+      const season = seasonMap.get(g.fixture_id) || 0;
+      const key = `${g.player_name}__${season}`;
+      if (agg.has(key)) agg.get(key)!.goals++;
+    }
+
+    for (const s of (stats || [])) {
+      const lu = lineups.find((l) => l.fixture_id === s.fixture_id && l.player_id === s.player_id);
+      if (!lu) continue;
+      const season = seasonMap.get(s.fixture_id) || 0;
+      const key = `${lu.player_name}__${season}`;
+      if (!agg.has(key)) continue;
+      const entry = agg.get(key)!;
+      if (s.stat_code === 'minutes-played') entry.minutes += Number(s.value) || 0;
+      if (s.stat_code === 'assists') entry.assists += Number(s.value) || 0;
+      if (s.stat_code === 'expected-goals') entry.xg += Number(s.value) || 0;
+    }
+
+    return Array.from(agg.values())
+      .filter((p) => p.games_played >= 3)
+      .sort((a, b) => b.goals - a.goals || b.assists - a.assists)
+      .map((p) => ({
+        ...p,
+        xg: +p.xg.toFixed(2),
+        goals_added: 0,
+        team: 'New York RB',
+      }));
+  }, []);
 }
 
 export async function getHistoricalFormGrid() {
@@ -1525,11 +1646,11 @@ export async function getHistoricalFormGrid() {
       .from('sm_fixtures')
       .select('id, season_id, starting_at, home_team_id, away_team_id, home_score, away_score, sm_seasons!inner(year)')
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: true });
 
     return (fixtures || []).map((f: any) => {
-      const isHome = f.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(f.home_team_id);
       const gf = (isHome ? f.home_score : f.away_score) ?? 0;
       const ga = (isHome ? f.away_score : f.home_score) ?? 0;
       return {
@@ -1561,7 +1682,7 @@ export async function getGKStats(season = 2026) {
     const { data } = await supabase
       .from('sm_players')
       .select('*')
-      .eq('team_id', RBNY_TEAM_ID)
+      .in('team_id', RBNY_TEAM_IDS)
       .eq('position', 'Goalkeeper');
 
     if (!data?.length) return [];
@@ -1585,7 +1706,7 @@ export async function getGKStats(season = 2026) {
       .select('id')
       .eq('season_id', seasonId)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
     const fIds = (seasonFixtures || []).map((f) => f.id);
 
     return Promise.all(data.map(async (p) => {

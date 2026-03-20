@@ -22,6 +22,7 @@ import {
   PLAYER_STAT_TYPES,
   MLS_LEAGUE_ID,
   RBNY_TEAM_ID,
+  RBNY_TEAM_IDS,
 } from './sportmonks-client';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -218,8 +219,9 @@ async function syncFixtures(seasonId: number) {
       });
     }
 
-    // Collect lineups + player-level stats
+    // Collect lineups + player-level stats (skip entries with null player_id)
     for (const lu of f.lineups || []) {
+      if (!lu.player_id) continue;
       const isStarter = lu.type_id === 11;
       lineupRows.push({
         id: lu.id,
@@ -326,32 +328,78 @@ async function syncStandings(seasonId: number) {
 // ── Sync RBNY squad ───────────────────────────────────────────────
 
 async function syncPlayers() {
-  log('Syncing RBNY squad...');
+  log('Syncing RBNY squad (both team IDs)...');
 
-  try {
-    const teamData = await getTeamSquad(RBNY_TEAM_ID);
-    const players = teamData?.players || teamData?.[0]?.players || [];
+  let totalPlayers = 0;
+  for (const teamId of RBNY_TEAM_IDS) {
+    try {
+      const teamData = await getTeamSquad(teamId);
+      const players = teamData?.players || teamData?.[0]?.players || [];
 
-    for (const p of players) {
-      await db.from('sm_players').upsert({
-        id: p.player_id || p.id,
-        name: p.player?.common_name || p.player?.display_name || p.player_name || 'Unknown',
-        common_name: p.player?.common_name || null,
-        position: p.position?.name || null,
-        detailed_position: p.detailed_position?.name || p.position?.name || null,
-        nationality: p.player?.nationality?.name || null,
-        date_of_birth: p.player?.date_of_birth || null,
-        height: p.player?.height || null,
-        weight: p.player?.weight || null,
-        jersey_number: p.jersey_number,
-        team_id: RBNY_TEAM_ID,
-        image_path: p.player?.image_path || null,
-      }, { onConflict: 'id' });
+      for (const p of players) {
+        await db.from('sm_players').upsert({
+          id: p.player_id || p.id,
+          name: p.player?.common_name || p.player?.display_name || p.player_name || 'Unknown',
+          common_name: p.player?.common_name || null,
+          position: p.position?.name || null,
+          detailed_position: p.detailed_position?.name || p.position?.name || null,
+          nationality: p.player?.nationality?.name || null,
+          date_of_birth: p.player?.date_of_birth || null,
+          height: p.player?.height || null,
+          weight: p.player?.weight || null,
+          jersey_number: p.jersey_number,
+          team_id: teamId,
+          image_path: p.player?.image_path || null,
+        }, { onConflict: 'id' });
+      }
+      log(`  team_id=${teamId}: ${players.length} players`);
+      totalPlayers += players.length;
+    } catch (err) {
+      log(`  team_id=${teamId} squad sync failed: ${err}`);
     }
-    log(`  ${players.length} players synced`);
-  } catch (err) {
-    log(`  Player sync failed: ${err}`);
   }
+  log(`  ${totalPlayers} total players synced`);
+}
+
+// ── Backfill player names from lineups ────────────────────────────
+
+async function backfillPlayerNames() {
+  log('Backfilling player names from lineup data...');
+
+  // Find players with "Unknown" names
+  const { data: unknowns } = await db
+    .from('sm_players')
+    .select('id')
+    .eq('name', 'Unknown');
+
+  if (!unknowns?.length) {
+    log('  No unknown players to backfill');
+    return;
+  }
+
+  const unknownIds = unknowns.map((p) => p.id);
+  log(`  ${unknownIds.length} players need name backfill`);
+
+  // Get names from lineups (distinct player_id + player_name)
+  const { data: lineupNames } = await db
+    .from('sm_lineups')
+    .select('player_id, player_name')
+    .in('player_id', unknownIds)
+    .not('player_name', 'is', null);
+
+  const nameMap = new Map<number, string>();
+  for (const lu of lineupNames || []) {
+    if (lu.player_name && !nameMap.has(lu.player_id)) {
+      nameMap.set(lu.player_id, lu.player_name);
+    }
+  }
+
+  let updated = 0;
+  for (const [playerId, name] of nameMap) {
+    await db.from('sm_players').update({ name, common_name: name }).eq('id', playerId);
+    updated++;
+  }
+  log(`  Updated ${updated} player names from lineups`);
 }
 
 // ── Refresh materialized view ─────────────────────────────────────
@@ -385,6 +433,7 @@ async function main() {
   await syncFixtures(currentSeasonId);
   await syncStandings(currentSeasonId);
   await syncPlayers();
+  await backfillPlayerNames();
   await refreshViews();
 
   log('=== Sync complete ===');

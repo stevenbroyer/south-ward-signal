@@ -113,9 +113,17 @@ export default function AdminArticlesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <AdminSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} />
-        <AdminSelect value={type} onChange={setType} options={TYPE_OPTIONS} />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <AdminSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} />
+          <AdminSelect value={type} onChange={setType} options={TYPE_OPTIONS} />
+        </div>
+        <button
+          onClick={() => router.push('/admin/articles/new')}
+          className="px-4 py-2 bg-red text-white text-sm font-semibold rounded-lg hover:bg-red/90 transition-colors"
+        >
+          + New Article
+        </button>
       </div>
 
       <AdminCard>

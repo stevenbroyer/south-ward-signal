@@ -102,9 +102,8 @@ export function ShotMap({ shots = [], className = '' }: ShotMapProps) {
                 whileInView={{ scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <title>{shot.player} — xG: {shot.xg.toFixed(2)} ({shot.outcome})</title>
-              </motion.circle>
+                aria-label={`${shot.player}: xG ${shot.xg.toFixed(2)} (${shot.outcome})`}
+              />
             );
           })}
         </svg>

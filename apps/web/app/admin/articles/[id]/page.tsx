@@ -68,6 +68,8 @@ export default function AdminArticleDetailPage() {
   const [article, setArticle] = useState<Article | null>(null);
   const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/articles/${id}`)
@@ -79,6 +81,35 @@ export default function AdminArticleDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleStatusChange(newStatus: string) {
+    setActionLoading(newStatus);
+    try {
+      const res = await fetch(`/api/admin/articles/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        const { article: updated } = await res.json();
+        setArticle(updated);
+      }
+    } catch {}
+    setActionLoading('');
+  }
+
+  async function handleDelete() {
+    setActionLoading('delete');
+    try {
+      const res = await fetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/admin/articles');
+        return;
+      }
+    } catch {}
+    setActionLoading('');
+    setShowDeleteConfirm(false);
+  }
 
   if (loading) return <AdminLoadingScreen />;
   if (!article) {
@@ -101,9 +132,43 @@ export default function AdminArticleDetailPage() {
 
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <TypeBadge type={article.type} />
-          <AdminBadge status={article.status} />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <TypeBadge type={article.type} />
+            <AdminBadge status={article.status} />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/admin/articles/${id}/edit`)}
+              className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-sws-600/50 rounded text-sws-400 hover:text-sws-white hover:border-sws-400 transition-colors"
+            >
+              Edit
+            </button>
+            {article.status === 'draft' && (
+              <button
+                onClick={() => handleStatusChange('published')}
+                disabled={!!actionLoading}
+                className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider bg-red text-white rounded hover:bg-red/90 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === 'published' ? 'Publishing...' : 'Publish'}
+              </button>
+            )}
+            {article.status === 'published' && (
+              <button
+                onClick={() => handleStatusChange('draft')}
+                disabled={!!actionLoading}
+                className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-sws-600/50 rounded text-sws-400 hover:text-sws-white hover:border-sws-400 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === 'draft' ? 'Unpublishing...' : 'Unpublish'}
+              </button>
+            )}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-red/30 rounded text-red/70 hover:text-red hover:border-red/60 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
         </div>
         <h2 className="font-display text-2xl font-bold text-sws-white">{article.title}</h2>
         <p className="text-sws-400 text-sm mt-1">{article.excerpt}</p>
@@ -127,6 +192,28 @@ export default function AdminArticleDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && (
+        <div className="bg-red/5 border border-red/30 rounded-lg p-4">
+          <p className="text-sws-white text-sm mb-3">Are you sure you want to delete this article? This cannot be undone.</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDelete}
+              disabled={actionLoading === 'delete'}
+              className="px-4 py-2 bg-red text-white text-sm font-semibold rounded-lg hover:bg-red/90 transition-colors disabled:opacity-50"
+            >
+              {actionLoading === 'delete' ? 'Deleting...' : 'Yes, Delete'}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-2 text-sws-400 text-sm hover:text-sws-white transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* QA Results */}
       <QAResultCard

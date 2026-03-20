@@ -9,7 +9,6 @@ const TABS = [
   { label: 'Players', href: '/data-room/players' },
   { label: 'Team', href: '/data-room/team' },
   { label: 'League', href: '/data-room/league' },
-  { label: 'Historical', href: '/data-room/historical' },
 ] as const;
 
 export function DataRoomNav() {

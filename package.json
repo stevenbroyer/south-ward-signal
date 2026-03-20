@@ -18,9 +18,14 @@
     "daily-content": "tsx scripts/daily-content.ts",
     "weekly-roundup": "tsx scripts/weekly-roundup.ts",
     "social-queue": "tsx scripts/social-scheduler.ts",
+    "sync-espn": "tsx scripts/sync-espn.ts",
     "seed-data": "tsx scripts/sync-sportmonks.ts",
     "setup-ghost": "tsx scripts/setup-ghost.ts",
     "generate-viz": "bash scripts/generate-vizzes.sh"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

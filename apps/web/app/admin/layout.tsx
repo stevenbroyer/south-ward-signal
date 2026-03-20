@@ -9,6 +9,8 @@ import { AdminLoadingScreen } from '@/components/admin/AdminLoadingScreen';
 // Map pathnames to page titles
 function getPageTitle(pathname: string): string {
   if (pathname === '/admin') return 'Overview';
+  if (pathname === '/admin/articles/new') return 'New Article';
+  if (pathname.endsWith('/edit')) return 'Edit Article';
   if (pathname.startsWith('/admin/articles/')) return 'Article Detail';
   if (pathname === '/admin/articles') return 'Articles';
   if (pathname.startsWith('/admin/social/')) return 'Social Post';

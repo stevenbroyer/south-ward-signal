@@ -31,7 +31,11 @@ export const typedSupabase = isConfigured
   ? createClient<Database>(supabaseUrl, supabaseKey)
   : (null as unknown as ReturnType<typeof createClient<Database>>);
 
-const RBNY_TEAM_ID = 383;
+const RBNY_TEAM_IDS = [190, 383];
+const RBNY_TEAM_ID = 190;
+function rbnyFilter(col: string): string {
+  return RBNY_TEAM_IDS.map((id) => `${col}.eq.${id}`).join(',');
+}
 
 const EMPTY_METRICS = {
   xgPerMatch: 0, points: 0, goalDifference: 0, ppda: 0,
@@ -46,7 +50,7 @@ export async function getLatestMatch() {
       .from('sm_fixtures')
       .select('*')
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .order('starting_at', { ascending: false })
       .limit(1)
       .single();
@@ -66,9 +70,9 @@ export async function getLatestMatch() {
       statMap[s.stat_code][side] = Number(s.value) || 0;
     }
 
-    const xg = statMap['expected-goals'] || { home: 0, away: 0 };
-    const possession = statMap['ball-possession'] || { home: 50, away: 50 };
-    const shots = statMap['shots-total'] || { home: 0, away: 0 };
+    const xg = statMap['expected-goals'] || null;
+    const possession = statMap['ball-possession'] || null;
+    const shots = statMap['shots-total'] || null;
 
     return {
       id: String(data.id),
@@ -77,8 +81,8 @@ export async function getLatestMatch() {
       away_team: data.away_team_name,
       home_score: data.home_score,
       away_score: data.away_score,
-      home_xg: xg.home,
-      away_xg: xg.away,
+      home_xg: xg?.home ?? null,
+      away_xg: xg?.away ?? null,
       status: 'finished',
       venue: null,
       stats: { possession, shots },
@@ -89,23 +93,41 @@ export async function getLatestMatch() {
   }
 }
 
-export async function getStandings(_conference = 'Eastern') {
+export async function getStandings(conference = 'Eastern') {
   if (!isConfigured) return [];
   try {
-    // Get current season
-    const { data: season } = await supabase
+    // Get current season (handle duplicate is_current rows)
+    const { data: seasons } = await supabase
       .from('sm_seasons')
       .select('id')
       .eq('league_id', 779)
       .eq('is_current', true)
-      .single();
+      .order('id', { ascending: false })
+      .limit(1);
+    const season = seasons?.[0];
     if (!season) return [];
 
-    const { data } = await supabase
-      .from('sm_standings')
-      .select('*')
-      .eq('season_id', season.id)
-      .order('position', { ascending: true });
+    // First try with conference filter
+    let data: any[] | null = null;
+    if (conference) {
+      const { data: filtered } = await supabase
+        .from('sm_standings')
+        .select('*')
+        .eq('season_id', season.id)
+        .ilike('conference', `%${conference}%`)
+        .order('position', { ascending: true });
+      data = filtered;
+    }
+
+    // Fallback: if no conference data, fetch all standings
+    if (!data?.length) {
+      const { data: all } = await supabase
+        .from('sm_standings')
+        .select('*')
+        .eq('season_id', season.id)
+        .order('position', { ascending: true });
+      data = all;
+    }
 
     if (!data?.length) return [];
 
@@ -173,12 +195,13 @@ export async function getNextScheduledMatch() {
       .from('sm_fixtures')
       .select('*')
       .eq('state', 'NS')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
       .gte('starting_at', new Date().toISOString())
       .order('starting_at', { ascending: true })
       .limit(1)
       .single();
     if (!data) return null;
+    const isHome = RBNY_TEAM_IDS.includes(data.home_team_id);
     return {
       id: String(data.id),
       date: data.starting_at,
@@ -188,6 +211,8 @@ export async function getNextScheduledMatch() {
       away_score: null,
       status: 'scheduled',
       venue: null,
+      isHome,
+      opponent: isHome ? data.away_team_name : data.home_team_name,
     };
   } catch {
     return null;
@@ -199,7 +224,7 @@ export async function getPlayerStats(_team = 'New York Red Bulls') {
   const { data } = await supabase
     .from('sm_players')
     .select('*')
-    .eq('team_id', RBNY_TEAM_ID);
+    .in('team_id', RBNY_TEAM_IDS);
   return (data || []).map((p) => ({
     id: String(p.id),
     name: p.common_name || p.name,
@@ -217,7 +242,7 @@ export async function getRecentMatches(limit = 5) {
     .from('sm_fixtures')
     .select('*')
     .eq('state', 'FT')
-    .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`)
+    .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`)
     .order('starting_at', { ascending: false })
     .limit(limit);
   return (data || []).map((f) => ({
@@ -235,23 +260,26 @@ export async function getTeamSeasonMetrics(_team = 'New York Red Bulls') {
   if (!isConfigured) return EMPTY_METRICS;
 
   try {
-    // Get current season
-    const { data: season } = await supabase
+    // Get current season (handle duplicate is_current rows)
+    const { data: seasons } = await supabase
       .from('sm_seasons')
       .select('id')
       .eq('league_id', 779)
       .eq('is_current', true)
-      .single();
+      .order('id', { ascending: false })
+      .limit(1);
+    const season = seasons?.[0];
 
     if (!season) return EMPTY_METRICS;
 
-    // Get RBNY standing
-    const { data: standing } = await supabase
+    // Get RBNY standing (may have multiple team IDs, take first match)
+    const { data: standings } = await supabase
       .from('sm_standings')
       .select('*')
       .eq('season_id', season.id)
-      .eq('team_id', RBNY_TEAM_ID)
-      .single();
+      .in('team_id', RBNY_TEAM_IDS)
+      .limit(1);
+    const standing = standings?.[0] || null;
 
     // Get RBNY finished fixtures this season
     const { data: fixtures } = await supabase
@@ -259,7 +287,7 @@ export async function getTeamSeasonMetrics(_team = 'New York Red Bulls') {
       .select('id, home_team_id, away_team_id, home_score, away_score')
       .eq('season_id', season.id)
       .eq('state', 'FT')
-      .or(`home_team_id.eq.${RBNY_TEAM_ID},away_team_id.eq.${RBNY_TEAM_ID}`);
+      .or(`${rbnyFilter('home_team_id')},${rbnyFilter('away_team_id')}`);
 
     const matches = fixtures || [];
     const matchCount = matches.length || 1;
@@ -269,7 +297,7 @@ export async function getTeamSeasonMetrics(_team = 'New York Red Bulls') {
     let cleanSheets = 0;
 
     for (const m of matches) {
-      const isHome = m.home_team_id === RBNY_TEAM_ID;
+      const isHome = RBNY_TEAM_IDS.includes(m.home_team_id);
       const scored = (isHome ? m.home_score : m.away_score) ?? 0;
       const conceded = (isHome ? m.away_score : m.home_score) ?? 0;
       goalsScored += scored;
@@ -289,7 +317,7 @@ export async function getTeamSeasonMetrics(_team = 'New York Red Bulls') {
         .from('sm_fixture_stats')
         .select('stat_code, value')
         .in('fixture_id', fixtureIds)
-        .eq('team_id', RBNY_TEAM_ID);
+        .in('team_id', RBNY_TEAM_IDS);
 
       for (const s of stats || []) {
         if (s.stat_code === 'shots-total') totalShots += Number(s.value) || 0;

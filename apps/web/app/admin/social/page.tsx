@@ -95,9 +95,16 @@ export default function AdminSocialPage() {
       key: 'content',
       header: 'Content',
       render: (row) => (
-        <span className="text-sws-300 text-xs line-clamp-2 max-w-md">
-          {row.content?.text ?? '—'}
-        </span>
+        <div className="max-w-md">
+          <span className="text-sws-300 text-xs line-clamp-2">
+            {row.content?.text ?? '—'}
+          </span>
+          {row.status === 'failed' && row.error_message && (
+            <p className="text-red/70 text-[10px] font-mono mt-1 line-clamp-1" title={row.error_message}>
+              Error: {row.error_message}
+            </p>
+          )}
+        </div>
       ),
     },
     { key: 'status', header: 'Status', render: (row) => <AdminBadge status={row.status} /> },

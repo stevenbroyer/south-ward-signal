@@ -57,8 +57,8 @@ export function HomeAwayComparison({ home, away, className = '' }: HomeAwayCompa
         </div>
 
         {STAT_ROWS.map((stat, i) => {
-          const hVal = (home as any)[stat.key] as number;
-          const aVal = (away as any)[stat.key] as number;
+          const hVal = Number((home as any)[stat.key]) || 0;
+          const aVal = Number((away as any)[stat.key]) || 0;
           const format = (v: number) => {
             if ('dec' in stat && stat.dec) return v.toFixed(stat.dec);
             return String(v);

@@ -60,12 +60,6 @@ function PreMatchBanner({ context }: MatchDayBannerProps) {
           >
             Preview
           </Link>
-          <Link
-            href="/community"
-            className="px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-sws-300 bg-sws-600/30 border border-sws-600/40 rounded hover:text-sws-white hover:bg-sws-600/50 transition-all duration-300"
-          >
-            Predict
-          </Link>
         </div>
       </div>
     </div>
@@ -177,12 +171,6 @@ function PostMatchBanner({ context }: MatchDayBannerProps) {
             className="px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-sws-white bg-red/10 border border-red/30 rounded hover:bg-red/20 hover:border-red/50 transition-all duration-300"
           >
             Full Match Stats
-          </Link>
-          <Link
-            href="/community"
-            className="px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-sws-300 bg-sws-600/30 border border-sws-600/40 rounded hover:text-sws-white hover:bg-sws-600/50 transition-all duration-300"
-          >
-            Rate Players
           </Link>
         </div>
       </div>

@@ -15,6 +15,7 @@ import { MetricCard } from '@/components/data/MetricCard';
 import { FormStreak } from '@/components/data/FormStreak';
 import { HomeAwayComparison } from '@/components/data/HomeAwayComparison';
 import { GoalkeeperRadar } from '@/components/data/GoalkeeperRadar';
+import { ShotZoneHeatmap } from '@/components/data/ShotZoneHeatmap';
 
 interface TeamClientProps {
   xgTrend: any[];
@@ -166,6 +167,15 @@ export function TeamClient({
           <HomeAwayComparison home={homeAway.home} away={homeAway.away} />
         </div>
       </RevealOnScroll>
+
+      {/* Shot Zones */}
+      {shotZones.length > 0 && (
+        <RevealOnScroll>
+          <div className="mb-6">
+            <ShotZoneHeatmap shots={shotZones} />
+          </div>
+        </RevealOnScroll>
+      )}
 
       {/* Goalkeeper Analytics */}
       {gkRadar && (

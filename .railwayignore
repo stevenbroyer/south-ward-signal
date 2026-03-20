@@ -1,0 +1,8 @@
+node_modules
+.next
+.turbo
+supabase/.temp
+apps/web/.next
+packages/shared/dist
+*.log
+.env*

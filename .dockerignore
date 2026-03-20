@@ -1,0 +1,7 @@
+node_modules
+.next
+.turbo
+.git
+supabase/.temp
+*.log
+.env*

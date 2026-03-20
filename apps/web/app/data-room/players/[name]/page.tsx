@@ -55,11 +55,11 @@ export default async function PlayerDetailPage({
   });
 
   // Build radar data (scaled to reasonable season maximums)
-  const maxGoals = season === 2026 ? 8 : 15;
-  const maxAssists = season === 2026 ? 5 : 10;
-  const maxKeyPasses = season === 2026 ? 20 : 40;
-  const maxTackles = season === 2026 ? 30 : 60;
-  const maxInterceptions = season === 2026 ? 20 : 40;
+  const maxGoals = 15;
+  const maxAssists = 10;
+  const maxKeyPasses = 40;
+  const maxTackles = 60;
+  const maxInterceptions = 40;
 
   const radarMetrics = [
     { stat: 'Goals', player: Math.min(100, ((player.goals ?? 0) / maxGoals) * 100), average: 50 },

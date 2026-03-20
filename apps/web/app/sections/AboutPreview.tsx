@@ -5,12 +5,12 @@ import { useRef } from 'react';
 import Link from 'next/link';
 
 const coverageTypes = [
-  { icon: '01', title: 'Match Recaps', desc: 'Full analysis within 60 minutes of the final whistle' },
+  { icon: '01', title: 'Match Recaps', desc: 'Post-match breakdowns with xG, key moments, and honest takes' },
   { icon: '02', title: 'Tactical Previews', desc: 'Key matchups, formation analysis, and predictions' },
   { icon: '03', title: 'Advanced Analytics', desc: 'xG, Goals Added, PPDA, and deep statistical dives' },
   { icon: '04', title: 'Transfer Intelligence', desc: 'Data-backed scouting reports on rumored targets' },
   { icon: '05', title: 'Visual Storytelling', desc: 'Shot maps, pass networks, and player radar charts' },
-  { icon: '06', title: 'Social Distribution', desc: 'Highlights on Twitter, TikTok, and Instagram' },
+  { icon: '06', title: 'Social Distribution', desc: 'Highlights on X and Instagram' },
 ];
 
 export function AboutPreview() {
@@ -37,15 +37,14 @@ export function AboutPreview() {
 
             <div className="space-y-5 text-sws-300 leading-relaxed">
               <p>
-                <strong className="text-sws-white">South Ward Signal</strong> is an independent media outlet
-                built by and for New York Red Bulls supporters. We combine advanced soccer analytics with
-                AI-powered content generation to deliver coverage that&apos;s faster, deeper, and more
-                data-rich than traditional sports media.
+                <strong className="text-sws-white">South Ward Signal</strong> is independent media
+                built by and for New York Red Bulls supporters. We pair advanced soccer analytics with
+                editorial storytelling to deliver coverage that&apos;s faster, deeper, and more
+                data-rich than what the big outlets bother giving MLS.
               </p>
               <p>
-                Every article is backed by real data from American Soccer Analysis, FBref, and API-Football.
-                Our AI writing system generates first drafts that are then validated against source data
-                before publication — no hallucinated stats, no fabricated quotes.
+                If we make a claim, there&apos;s a number behind it. If the data isn&apos;t there,
+                we&apos;ll tell you that too.
               </p>
               <p>
                 Named after the supporters&apos; section at Red Bull Arena, South Ward Signal represents

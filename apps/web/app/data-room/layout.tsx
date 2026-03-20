@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { DataRoomNav } from '@/components/data/DataRoomNav';
-import { SeasonSelector } from '@/components/data/SeasonSelector';
 
 export const metadata = {
   title: 'Data Room',
@@ -13,17 +12,12 @@ export default function DataRoomLayout({ children }: { children: React.ReactNode
       <div className="max-w-container mx-auto px-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
-              <p className="text-xs font-mono text-red uppercase tracking-widest mb-3">Analytics</p>
-              <h1 className="font-display font-black text-4xl md:text-5xl text-sws-white">Data Room</h1>
-              <p className="text-sws-400 mt-3 max-w-lg">
-                Advanced metrics, match data, and statistical analysis for the New York Red Bulls.
-              </p>
-            </div>
-            <Suspense fallback={<div className="w-32 h-10 bg-bg-card rounded-lg animate-pulse" />}>
-              <SeasonSelector />
-            </Suspense>
+          <div className="mb-6">
+            <p className="text-xs font-mono text-red uppercase tracking-widest mb-3">2026 Season</p>
+            <h1 className="font-display font-black text-4xl md:text-5xl text-sws-white">Data Room</h1>
+            <p className="text-sws-400 mt-3 max-w-lg">
+              Advanced metrics, match data, and statistical analysis for the New York Red Bulls.
+            </p>
           </div>
 
           {/* Tab Navigation */}

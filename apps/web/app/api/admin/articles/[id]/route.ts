@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin-api';
 import { createAdminClient } from '@/lib/supabase-auth';
+import { marked } from 'marked';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifyAdminSession();
@@ -34,6 +35,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 }
 
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifyAdminSession();
   if (!user) {
@@ -44,17 +49,44 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json();
   const db = createAdminClient();
 
-  // Only allow updating specific fields
-  const allowed: Record<string, unknown> = {};
-  if (body.status) allowed.status = body.status;
+  const updates: Record<string, unknown> = {};
 
-  if (Object.keys(allowed).length === 0) {
+  if (body.title !== undefined) updates.title = body.title;
+  if (body.excerpt !== undefined) updates.excerpt = body.excerpt;
+  if (body.type !== undefined) updates.type = body.type;
+  if (body.tags !== undefined) updates.tags = body.tags;
+  if (body.featured_image !== undefined) updates.featured_image = body.featured_image;
+  if (body.seo_title !== undefined) updates.seo_title = body.seo_title;
+  if (body.seo_description !== undefined) updates.seo_description = body.seo_description;
+
+  if (body.body !== undefined) {
+    updates.body = body.body;
+    updates.html_body = await marked(body.body);
+    updates.word_count = countWords(body.body);
+  }
+
+  if (body.status !== undefined) {
+    updates.status = body.status;
+    if (body.status === 'published') {
+      // Set published_at if publishing for the first time
+      const { data: existing } = await db
+        .from('articles')
+        .select('published_at')
+        .eq('id', id)
+        .single();
+      if (!existing?.published_at) {
+        updates.published_at = new Date().toISOString();
+      }
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
   const { data, error } = await db
     .from('articles')
-    .update(allowed)
+    .update(updates)
     .eq('id', id)
     .select()
     .single();
@@ -64,4 +96,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   return NextResponse.json({ article: data });
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await verifyAdminSession();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const db = createAdminClient();
+
+  const { error } = await db
+    .from('articles')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
