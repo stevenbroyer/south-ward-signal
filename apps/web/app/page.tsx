@@ -42,9 +42,9 @@ export default async function HomePage() {
   return (
     <>
       <Hero />
-      {matchDayContext.state !== 'OFF_DAY' && (
-        <MatchDayBanner context={matchDayContext} />
-      )}
+      {/* Always mounted: it polls /api/match-live and shows the banner when a
+          match is near/live, even if the server-rendered DB state is stale. */}
+      <MatchDayBanner context={matchDayContext} />
       <LatestSection articles={normalizedArticles} />
       <DataRoomPreview matchData={latestMatch} standingsData={standings} />
       <SocialPreview />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import type { MatchDayContext } from '@/lib/match-day';
@@ -92,6 +93,9 @@ function LiveBanner({ context }: MatchDayBannerProps) {
           <span className="text-xs font-mono text-red uppercase tracking-[0.3em] font-bold">
             Live
           </span>
+          {match.statusDetail && (
+            <span className="text-xs font-mono text-sws-400">{match.statusDetail}</span>
+          )}
         </div>
 
         {/* Score display */}
@@ -178,9 +182,47 @@ function PostMatchBanner({ context }: MatchDayBannerProps) {
   );
 }
 
-/* ── Main Export ── */
+/* ── Main Export ──
+   Mounts on every homepage load and polls /api/match-live (ESPN real-time) so
+   the banner reflects LIVE scores without waiting for the 3-hour DB sync.
+   Cadence adapts: ~25s while LIVE, 60s around a match, 5 min otherwise. */
 export function MatchDayBanner({ context }: MatchDayBannerProps) {
-  if (context.state === 'OFF_DAY') return null;
+  const [ctx, setCtx] = useState<MatchDayContext>(context);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const schedule = (state?: string) => {
+      if (cancelled) return;
+      const delay =
+        state === 'LIVE' ? 25_000 : state === 'PRE_MATCH' || state === 'POST_MATCH' ? 60_000 : 300_000;
+      timer = setTimeout(tick, delay);
+    };
+
+    async function tick() {
+      try {
+        const res = await fetch('/api/match-live', { cache: 'no-store' });
+        if (!cancelled && res.ok) {
+          const data = (await res.json()) as MatchDayContext;
+          if (data?.state) setCtx(data);
+          schedule(data?.state);
+          return;
+        }
+      } catch {
+        /* network hiccup — just retry on the slow cadence */
+      }
+      schedule('OFF_DAY');
+    }
+
+    tick();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  if (ctx.state === 'OFF_DAY') return null;
 
   return (
     <section className="relative -mt-16 z-20 pb-4">
@@ -190,9 +232,9 @@ export function MatchDayBanner({ context }: MatchDayBannerProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       >
-        {context.state === 'PRE_MATCH' && <PreMatchBanner context={context} />}
-        {context.state === 'LIVE' && <LiveBanner context={context} />}
-        {context.state === 'POST_MATCH' && <PostMatchBanner context={context} />}
+        {ctx.state === 'PRE_MATCH' && <PreMatchBanner context={ctx} />}
+        {ctx.state === 'LIVE' && <LiveBanner context={ctx} />}
+        {ctx.state === 'POST_MATCH' && <PostMatchBanner context={ctx} />}
       </motion.div>
     </section>
   );

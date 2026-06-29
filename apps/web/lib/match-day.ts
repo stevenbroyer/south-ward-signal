@@ -12,6 +12,8 @@ export interface MatchDayContext {
     venue: string;
     competition: string;
     status: string;
+    /** Live clock/period from ESPN, e.g. "63'", "HT" (LIVE only). */
+    statusDetail?: string | null;
   } | null;
   /** Hours until match (PRE_MATCH) or hours since match ended (POST_MATCH) */
   hoursOffset: number;

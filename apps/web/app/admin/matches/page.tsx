@@ -15,12 +15,7 @@ interface MatchRow {
   away_team: string;
   home_score: number | null;
   away_score: number | null;
-  home_xg: number | null;
-  away_xg: number | null;
   status: string;
-  venue: string;
-  competition: string;
-  article_count: number;
 }
 
 const columns: Column<MatchRow>[] = [
@@ -34,7 +29,7 @@ const columns: Column<MatchRow>[] = [
     header: 'Match',
     render: (row) => (
       <span className="text-sws-white text-sm">
-        {row.home_team} vs {row.away_team}
+        {row.home_team} <span className="text-sws-500">vs</span> {row.away_team}
       </span>
     ),
   },
@@ -50,29 +45,7 @@ const columns: Column<MatchRow>[] = [
         <span className="text-sws-500">—</span>
       ),
   },
-  {
-    key: 'xg',
-    header: 'xG',
-    render: (row) =>
-      row.home_xg !== null ? (
-        <span className="font-mono text-xs text-sws-300">
-          {Number(row.home_xg).toFixed(1)}–{Number(row.away_xg).toFixed(1)}
-        </span>
-      ) : (
-        <span className="text-sws-500">—</span>
-      ),
-  },
   { key: 'status', header: 'Status', render: (row) => <AdminBadge status={row.status} /> },
-  {
-    key: 'articles',
-    header: 'Articles',
-    className: 'text-right',
-    render: (row) => (
-      <span className={`font-mono text-xs ${row.article_count > 0 ? 'text-success' : 'text-sws-500'}`}>
-        {row.article_count}
-      </span>
-    ),
-  },
 ];
 
 export default function AdminMatchesPage() {
@@ -80,11 +53,13 @@ export default function AdminMatchesPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), pageSize: '20' });
-
     try {
       const res = await fetch(`/api/admin/matches?${params}`);
       const data = await res.json();
@@ -99,17 +74,66 @@ export default function AdminMatchesPage() {
 
   useEffect(() => { fetchMatches(); }, [fetchMatches]);
 
+  async function syncNow() {
+    setSyncing(true);
+    setNotice('');
+    setError('');
+    try {
+      const res = await fetch('/api/admin/matches/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Sync failed.');
+        return;
+      }
+      const fixtures = (data.results || []).find((r: string) => r.startsWith('fixtures:'));
+      setNotice(`Synced from ESPN${fixtures ? ` — ${fixtures.replace('fixtures:', '').trim()} fixtures` : ''}.`);
+      if (page !== 1) setPage(1);
+      else await fetchMatches();
+    } catch {
+      setError('Network error during sync.');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   if (loading && matches.length === 0) return <AdminLoadingScreen />;
 
   return (
-    <AdminCard>
-      <AdminTable
-        columns={columns}
-        data={matches}
-        rowKey={(r) => r.id}
-        emptyMessage="No matches found"
-      />
-      <AdminPagination page={page} pageSize={20} total={total} onPageChange={setPage} />
-    </AdminCard>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sws-400 text-sm">
+          NYRB fixtures &amp; results, synced free from ESPN. Auto-refreshes every 3 hours.
+        </p>
+        <button
+          onClick={syncNow}
+          disabled={syncing}
+          className="px-4 py-2 bg-red text-white text-sm font-semibold rounded-lg hover:bg-red/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          {syncing ? 'Syncing…' : '↻ Sync now'}
+        </button>
+      </div>
+
+      {notice && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2.5 text-green-400 text-sm">
+          {notice}
+        </div>
+      )}
+      {error && (
+        <div className="bg-red/10 border border-red/30 rounded-lg px-4 py-2.5 text-red text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="text-red/70 hover:text-red ml-3">×</button>
+        </div>
+      )}
+
+      <AdminCard>
+        <AdminTable
+          columns={columns}
+          data={matches}
+          rowKey={(r) => r.id}
+          emptyMessage="No matches found — hit Sync now."
+        />
+        <AdminPagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+      </AdminCard>
+    </div>
   );
 }
