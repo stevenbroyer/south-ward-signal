@@ -99,54 +99,90 @@ async function syncTeams(): Promise<void> {
   log(`  ${count} teams synced`);
 }
 
-// ── Sync RBNY fixtures (past results) ───────────────────────────
+// ── Upsert helpers ──────────────────────────────────────────────
+
+/** Make sure a team row exists so fixture FK constraints don't fail
+ *  (cup matches can feature non-MLS opponents not in the league list). */
+async function ensureTeam(competitor: any): Promise<void> {
+  const t = competitor?.team;
+  const id = Number(t?.id);
+  if (!id) return;
+  await db.from('sm_teams').upsert(
+    {
+      id,
+      name: t.displayName || t.name || 'Unknown',
+      short_code: t.abbreviation || null,
+      is_focus: id === ESPN_RBNY_ID,
+    },
+    { onConflict: 'id' },
+  );
+}
+
+/** Parse an ESPN event, ensure both teams exist, then upsert the fixture. */
+async function upsertEvent(evt: any): Promise<boolean> {
+  const competitors = evt.competitions?.[0]?.competitors || [];
+  for (const c of competitors) await ensureTeam(c);
+
+  const row = parseFixture(evt);
+  if (!row) return false;
+
+  const { error } = await db.from('sm_fixtures').upsert(row, { onConflict: 'id' });
+  if (error) {
+    log(`  Warning: fixture ${row.id} upsert failed: ${error.message}`);
+    return false;
+  }
+  return true;
+}
+
+// ── Sync RBNY fixtures (past results via team schedule) ─────────
 
 async function syncRBNYSchedule(): Promise<void> {
-  log('Syncing RBNY schedule (past results)...');
+  log('Syncing RBNY schedule (results)...');
   const data = await fetchJson<any>(
     `${ESPN_BASE}/site/v2/sports/${MLS_SPORT}/teams/${ESPN_RBNY_ID}/schedule?season=2026`,
   );
 
-  const events = data?.events || [];
   let count = 0;
-
-  for (const evt of events) {
-    const row = parseFixture(evt);
-    if (!row) continue;
-
-    const { error } = await db.from('sm_fixtures').upsert(row, { onConflict: 'id' });
-    if (error) log(`  Warning: fixture ${row.id} upsert failed: ${error.message}`);
-    count++;
+  for (const evt of data?.events || []) {
+    if (await upsertEvent(evt)) count++;
   }
-  log(`  ${count} RBNY past fixtures synced`);
+  log(`  ${count} RBNY fixtures synced from team schedule`);
 }
 
-// ── Sync upcoming fixtures (all MLS, next 60 days) ──────────────
+// ── Sync the whole season's fixtures (chunked scoreboard sweep) ──
+// ESPN's scoreboard caps each query at ~100 events, so sweep the season
+// in 30-day windows to capture every fixture (incl. all upcoming RBNY games).
 
-async function syncUpcomingFixtures(): Promise<void> {
-  log('Syncing upcoming MLS fixtures...');
+async function syncSeasonFixtures(): Promise<void> {
+  log('Syncing season fixtures (chunked scoreboard sweep)...');
 
   const now = new Date();
-  const future = new Date(now);
-  future.setDate(future.getDate() + 60);
+  const start = new Date(now);
+  start.setDate(start.getDate() - 7); // small lookback to catch just-played games
+  const end = new Date(now.getFullYear(), 11, 15); // mid-December (end of MLS season)
 
-  const dateRange = formatDateRange(now, future);
-  const data = await fetchJson<any>(
-    `${ESPN_BASE}/site/v2/sports/${MLS_SPORT}/scoreboard?dates=${dateRange}`,
-  );
+  let cursor = new Date(start);
+  let total = 0;
 
-  const events = data?.events || [];
-  let count = 0;
+  while (cursor < end) {
+    const chunkEnd = new Date(cursor);
+    chunkEnd.setDate(chunkEnd.getDate() + 30);
+    const range = formatDateRange(cursor, chunkEnd > end ? end : chunkEnd);
 
-  for (const evt of events) {
-    const row = parseFixture(evt);
-    if (!row) continue;
+    try {
+      const data = await fetchJson<any>(
+        `${ESPN_BASE}/site/v2/sports/${MLS_SPORT}/scoreboard?dates=${range}`,
+      );
+      for (const evt of data?.events || []) {
+        if (await upsertEvent(evt)) total++;
+      }
+    } catch (err) {
+      log(`  chunk ${range} failed: ${err}`);
+    }
 
-    const { error } = await db.from('sm_fixtures').upsert(row, { onConflict: 'id' });
-    if (error) log(`  Warning: fixture ${row.id} upsert failed: ${error.message}`);
-    count++;
+    cursor = chunkEnd;
   }
-  log(`  ${count} upcoming fixtures synced`);
+  log(`  ${total} season fixtures synced`);
 }
 
 // ── Extract score from ESPN's varying formats ──────────────────
@@ -378,7 +414,7 @@ async function main() {
   await syncSeason();
   await syncTeams();
   await syncRBNYSchedule();
-  await syncUpcomingFixtures();
+  await syncSeasonFixtures();
   await syncStandings();
   await syncMatchStats();
   await computeRBNYForm();

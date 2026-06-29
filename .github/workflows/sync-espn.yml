@@ -1,0 +1,30 @@
+name: Sync RBNY Matches (ESPN, free)
+
+# Keeps fixtures, results, standings and form fresh by pulling from ESPN's
+# free public API into Supabase. Runs every 3 hours (and on demand).
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+# Don't let overlapping runs stomp on each other.
+concurrency:
+  group: sync-espn
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Sync matches from ESPN
+        run: npm run sync-espn
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
