@@ -46,7 +46,12 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           password,
         });
-        if (!error && data.user?.email) {
+        // Only accounts explicitly marked as admins may enter. The `role` claim
+        // lives in app_metadata, which can ONLY be set with the service role
+        // (i.e. via the Team panel) — a self-registered user can never have it,
+        // so valid Supabase credentials alone are not enough.
+        const role = (data.user?.app_metadata as { role?: string } | undefined)?.role;
+        if (!error && data.user?.email && role === 'admin') {
           authedEmail = data.user.email;
         }
       } catch {

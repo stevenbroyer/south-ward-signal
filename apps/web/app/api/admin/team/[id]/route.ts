@@ -78,7 +78,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   // Don't allow removing the last remaining admin.
   const { data: list } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (list && list.users.length <= 1) {
+  const adminCount = (list?.users ?? []).filter(
+    (u) => (u.app_metadata as { role?: string } | undefined)?.role === 'admin',
+  ).length;
+  if (adminCount <= 1) {
     return NextResponse.json({ error: 'Cannot delete the last admin' }, { status: 400 });
   }
 

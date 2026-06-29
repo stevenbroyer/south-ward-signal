@@ -22,6 +22,9 @@ export async function GET() {
   }
 
   const users = data.users
+    // Only surface accounts marked as admins — never any non-admin auth users
+    // (e.g. future community/end-user accounts in the same project).
+    .filter((u) => (u.app_metadata as { role?: string } | undefined)?.role === 'admin')
     .map((u) => ({
       id: u.id,
       email: u.email ?? '',
@@ -66,6 +69,9 @@ export async function POST(request: NextRequest) {
     email,
     password,
     email_confirm: true,
+    // Marks this account as an admin. Only settable with the service role,
+    // so it's the gate the login route checks.
+    app_metadata: { role: 'admin' },
   });
 
   if (error) {

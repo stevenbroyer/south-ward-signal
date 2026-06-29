@@ -37,7 +37,8 @@ export function RichTextEditor({
       Link.configure({
         openOnClick: false,
         autolink: true,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        protocols: ['http', 'https', 'mailto'],
+        HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
       }),
       Image,
       Placeholder.configure({ placeholder: placeholder || 'Write your article…' }),
@@ -121,11 +122,16 @@ function Toolbar({
     const prev = editor.getAttributes('link').href as string | undefined;
     const url = window.prompt('Link URL', prev || 'https://');
     if (url === null) return;
-    if (url.trim() === '') {
+    const trimmed = url.trim();
+    if (trimmed === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+    if (!isSafeLinkUrl(trimmed)) {
+      window.alert('Only http, https, and mailto links are allowed.');
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: trimmed }).run();
   }
 
   return (
@@ -234,4 +240,14 @@ function Btn({
 
 function Divider() {
   return <span className="w-px h-5 bg-sws-700/50 mx-1" aria-hidden />;
+}
+
+/** Only allow safe link protocols — blocks javascript:, data:, vbscript:, etc. */
+function isSafeLinkUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
 }
