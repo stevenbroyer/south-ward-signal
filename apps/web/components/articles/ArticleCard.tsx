@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { TagBadge } from './TagBadge';
 import { MatchRecapCover } from './MatchRecapCover';
 import { PlayerRatingsCover } from './PlayerRatingsCover';
+import { PreMatchPreviewCover } from './PreMatchPreviewCover';
 import { formatDate } from '@/lib/utils';
 
 interface ArticleCardProps {
@@ -48,6 +49,8 @@ export function ArticleCard({
           <MatchRecapCover title={title} className="aspect-[16/9]" />
         ) : primary_tag === 'player-ratings' || primary_tag === 'Player Ratings' ? (
           <PlayerRatingsCover title={title} className="aspect-[16/9]" />
+        ) : primary_tag === 'pre-match-preview' || primary_tag === 'Pre-Match Preview' ? (
+          <PreMatchPreviewCover title={title} className="aspect-[16/9]" />
         ) : null}
 
         {/* Content */}

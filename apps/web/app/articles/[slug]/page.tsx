@@ -9,6 +9,7 @@ import { TableOfContents } from '@/components/articles/TableOfContents';
 import { SocialShare } from '@/components/articles/SocialShare';
 import { MatchRecapCover } from '@/components/articles/MatchRecapCover';
 import { PlayerRatingsCover } from '@/components/articles/PlayerRatingsCover';
+import { PreMatchPreviewCover } from '@/components/articles/PreMatchPreviewCover';
 
 export const dynamic = 'force-dynamic';
 
@@ -156,6 +157,13 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
             ) : article.type === 'player-ratings' ? (
               <RevealOnScroll className="mb-10">
                 <PlayerRatingsCover
+                  title={article.title}
+                  className="rounded-xl aspect-[16/9] border border-sws-700/50"
+                />
+              </RevealOnScroll>
+            ) : article.type === 'pre-match-preview' ? (
+              <RevealOnScroll className="mb-10">
+                <PreMatchPreviewCover
                   title={article.title}
                   className="rounded-xl aspect-[16/9] border border-sws-700/50"
                 />

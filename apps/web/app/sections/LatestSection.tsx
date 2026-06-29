@@ -5,6 +5,7 @@ import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
 import { MatchRecapCover } from '@/components/articles/MatchRecapCover';
 import { PlayerRatingsCover } from '@/components/articles/PlayerRatingsCover';
+import { PreMatchPreviewCover } from '@/components/articles/PreMatchPreviewCover';
 
 const TAG_COLORS: Record<string, string> = {
   'match-recap': '#ED1A3D',
@@ -96,6 +97,8 @@ export function LatestSection({ articles }: LatestSectionProps) {
                   <MatchRecapCover title={featured.title} className="w-full h-full" />
                 ) : (featured.primary_tag === 'player-ratings' || featured.primary_tag === 'Player Ratings') ? (
                   <PlayerRatingsCover title={featured.title} className="w-full h-full" />
+                ) : (featured.primary_tag === 'pre-match-preview' || featured.primary_tag === 'Pre-Match Preview') ? (
+                  <PreMatchPreviewCover title={featured.title} className="w-full h-full" />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated via-bg-card to-bg opacity-80" />
                 )}

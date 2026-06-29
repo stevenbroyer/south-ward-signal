@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { TagBadge } from './TagBadge';
 import { MatchRecapCover } from './MatchRecapCover';
 import { PlayerRatingsCover } from './PlayerRatingsCover';
+import { PreMatchPreviewCover } from './PreMatchPreviewCover';
 import { formatDate } from '@/lib/utils';
 
 interface FeaturedArticleProps {
@@ -52,6 +53,8 @@ export function FeaturedArticle({
               <MatchRecapCover title={title} className="w-full h-full" />
             ) : (primary_tag === 'player-ratings' || primary_tag === 'Player Ratings') ? (
               <PlayerRatingsCover title={title} className="w-full h-full" />
+            ) : (primary_tag === 'pre-match-preview' || primary_tag === 'Pre-Match Preview') ? (
+              <PreMatchPreviewCover title={title} className="w-full h-full" />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/40 to-transparent lg:from-transparent lg:via-transparent lg:to-bg-card" />
             {primary_tag && !feature_image && (

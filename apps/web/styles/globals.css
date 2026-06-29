@@ -329,6 +329,33 @@
 }
 
 
+/* ─── Admin Rich Text Editor (TipTap) ────────────────────── */
+
+.sws-editor .ProseMirror {
+  @apply outline-none;
+}
+
+/* The editor reuses .article-content styling so what you type matches what
+   readers see. Tighten the top margins so the first heading isn't pushed down. */
+.sws-editor .ProseMirror > :first-child {
+  @apply mt-0;
+}
+
+/* Placeholder text for the empty document / empty nodes. */
+.sws-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-sws-600 pointer-events-none float-left h-0;
+}
+
+.sws-editor .ProseMirror img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.sws-editor .ProseMirror .ProseMirror-selectednode {
+  @apply outline outline-2 outline-red/60;
+}
+
+
 /* ─── Reduced Motion ─────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

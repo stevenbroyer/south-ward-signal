@@ -11,7 +11,7 @@ const CONTENT_TYPES = [
   { label: 'All', tag: null },
   { label: 'Match Recap', tag: 'match-recap' },
   { label: 'Player Ratings', tag: 'player-ratings' },
-  { label: 'Preview', tag: 'preview' },
+  { label: 'Preview', tag: 'pre-match-preview' },
   { label: 'Tactical Analysis', tag: 'tactical-analysis' },
   { label: 'Player Spotlight', tag: 'player-spotlight' },
   { label: 'Transfer Intel', tag: 'transfer-intel' },

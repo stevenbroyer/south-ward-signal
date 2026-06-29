@@ -9,15 +9,22 @@ const NAV_ITEMS = [
   { href: '/admin/social', label: 'Social', icon: ShareIcon },
   { href: '/admin/matches', label: 'Matches', icon: TrophyIcon },
   { href: '/admin/analytics', label: 'Analytics', icon: ChartIcon },
+  { href: '/admin/team', label: 'Team', icon: UsersIcon },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({
+  className = '',
+  onNavigate,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 border-r border-sws-700/50 bg-bg-card min-h-screen flex flex-col">
+    <aside className={`w-60 shrink-0 border-r border-sws-700/50 bg-bg-card min-h-screen flex-col ${className}`}>
       <div className="p-5 border-b border-sws-700/50">
-        <Link href="/admin" className="font-display text-lg font-bold text-sws-white">
+        <Link href="/admin" onClick={onNavigate} className="font-display text-lg font-bold text-sws-white">
           SWS Admin
         </Link>
       </div>
@@ -32,6 +39,7 @@ export function AdminSidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
                   ? 'bg-red/10 text-red border border-red/20'
@@ -48,6 +56,7 @@ export function AdminSidebar() {
       <div className="p-3 border-t border-sws-700/50">
         <Link
           href="/"
+          onClick={onNavigate}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sws-400 hover:text-sws-white hover:bg-bg-elevated transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
@@ -101,6 +110,15 @@ function ChartIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
+function UsersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }

@@ -8,6 +8,16 @@ export function createBrowserClient() {
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 
+/**
+ * Stateless anon client for verifying credentials server-side
+ * (signInWithPassword) without persisting a Supabase session.
+ */
+export function createAuthClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 /** Server-side admin client (uses service role key, bypasses RLS) */
 export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

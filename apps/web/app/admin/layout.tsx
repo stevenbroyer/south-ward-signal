@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/lib/hooks/use-admin-auth';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
@@ -17,6 +18,7 @@ function getPageTitle(pathname: string): string {
   if (pathname === '/admin/social') return 'Social Queue';
   if (pathname === '/admin/matches') return 'Matches';
   if (pathname === '/admin/analytics') return 'Analytics';
+  if (pathname === '/admin/team') return 'Team';
   if (pathname === '/admin/login') return 'Login';
   return 'Admin';
 }
@@ -25,6 +27,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAdminAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   // Login page renders without the admin shell
   if (pathname === '/admin/login') {
@@ -46,10 +54,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar />
+      {/* Desktop sidebar */}
+      <AdminSidebar className="hidden md:flex" />
+
+      {/* Mobile drawer */}
+      {menuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <AdminSidebar className="relative z-10 flex" onNavigate={() => setMenuOpen(false)} />
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader title={title} userEmail={user.email} onSignOut={signOut} />
-        <div className="flex-1 overflow-auto p-6">
+        <AdminHeader
+          title={title}
+          userEmail={user.email}
+          onSignOut={signOut}
+          onMenuClick={() => setMenuOpen(true)}
+        />
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           {children}
         </div>
       </div>
