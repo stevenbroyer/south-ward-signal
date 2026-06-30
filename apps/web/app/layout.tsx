@@ -5,6 +5,8 @@ import { fraunces, sourceSans, jetbrainsMono } from '@/lib/fonts';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { QueryProvider } from '@/lib/query-provider';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TWITTER } from '@/lib/site';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -31,6 +33,33 @@ export const metadata: Metadata = {
     creator: '@SouthWardSignal',
   },
   robots: { index: true, follow: true },
+  alternates: {
+    canonical: '/',
+    types: { 'application/rss+xml': `${SITE_URL}/feed.xml` },
+  },
+};
+
+const SITE_JSONLD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['Organization', 'NewsMediaOrganization'],
+      '@id': `${SITE_URL}/#org`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.svg` },
+      sameAs: [SITE_TWITTER],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      publisher: { '@id': `${SITE_URL}/#org` },
+    },
+  ],
 };
 
 export const viewport: Viewport = {
@@ -64,6 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main className="min-h-screen">{children}</main>
         ) : (
           <QueryProvider>
+            <JsonLd data={SITE_JSONLD} />
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-red focus:text-white focus:rounded">
               Skip to content
             </a>

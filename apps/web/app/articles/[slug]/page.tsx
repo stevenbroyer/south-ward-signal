@@ -10,6 +10,8 @@ import { SocialShare } from '@/components/articles/SocialShare';
 import { MatchRecapCover } from '@/components/articles/MatchRecapCover';
 import { PlayerRatingsCover } from '@/components/articles/PlayerRatingsCover';
 import { PreMatchPreviewCover } from '@/components/articles/PreMatchPreviewCover';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,8 +97,38 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   const readingTime = Math.max(1, Math.round((article.word_count || 0) / 250));
   const articleHtml = article.html_body ? addHeadingIds(article.html_body) : '';
 
+  const canonical = `${SITE_URL}/articles/${params.slug}`;
+  const ogImage = article.featured_image
+    || `${SITE_URL}/api/og?title=${encodeURIComponent(article.title)}&type=${encodeURIComponent(article.type || '')}`;
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.excerpt || '',
+    image: [ogImage],
+    datePublished: article.published_at || undefined,
+    dateModified: article.published_at || undefined,
+    articleSection: article.type || undefined,
+    url: canonical,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+    author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    publisher: { '@id': `${SITE_URL}/#org` },
+    isAccessibleForFree: true,
+  };
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Articles', item: `${SITE_URL}/articles` },
+      { '@type': 'ListItem', position: 3, name: article.title, item: canonical },
+    ],
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-20">
+      <JsonLd data={articleLd} />
+      <JsonLd data={breadcrumbLd} />
       <ReadingProgress />
 
       <div className="max-w-container mx-auto px-6">

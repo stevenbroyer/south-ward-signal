@@ -1,68 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { isEmailConfigured, addSubscriber, sendEmail } from '@/lib/email';
+import { SITE_URL } from '@/lib/site';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function welcomeHtml(): string {
+  return `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
+          <tr><td style="background:#0A0A0C;padding:24px;color:#fff;font-size:20px;font-weight:800;">South Ward <span style="color:#ED1A3D;">Signal</span></td></tr>
+          <tr><td style="padding:28px 24px;color:#222;font-size:15px;line-height:1.6;">
+            <p style="margin:0 0 14px;">You're in. Welcome to the South Ward.</p>
+            <p style="margin:0 0 14px;">You'll get our sharpest New York Red Bulls coverage — match recaps, tactical breakdowns, and the data nobody else bothers with.</p>
+            <p style="margin:0;"><a href="${SITE_URL}/articles" style="color:#ED1A3D;font-weight:700;text-decoration:none;">Start reading →</a></p>
+          </td></tr>
+          <tr><td style="padding:16px 24px;background:#fafafa;color:#999;font-size:12px;border-top:1px solid #eee;">South Ward Signal · Independent, not affiliated with the New York Red Bulls or MLS.</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body></html>`;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email } = body;
+    const { email } = await request.json();
+    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+      return NextResponse.json({ error: 'Please enter a valid email.' }, { status: 400 });
+    }
+    const clean = email.trim().toLowerCase();
 
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
+    if (!isEmailConfigured()) {
+      // Not configured yet — accept gracefully so the form works in dev/preview.
+      console.log(`[subscribe] (email not configured) ${clean}`);
+      return NextResponse.json({ success: true, message: 'Thanks — you\'re on the list!' });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 });
+    await addSubscriber(clean);
+    try {
+      await sendEmail({ to: clean, subject: 'Welcome to South Ward Signal', html: welcomeHtml() });
+    } catch (err) {
+      // Subscribed fine even if the welcome email hiccups.
+      console.error('[subscribe] welcome email failed:', (err as Error).message);
     }
 
-    const ghostUrl = process.env.GHOST_URL;
-    const adminKey = process.env.GHOST_ADMIN_API_KEY;
-
-    if (!ghostUrl || !adminKey) {
-      // Fallback: log and return success (for dev without Ghost)
-      console.log(`[Subscribe] New subscriber (no Ghost configured): ${email}`);
-      return NextResponse.json({ success: true, message: 'Successfully subscribed.' });
-    }
-
-    // Build Ghost Admin JWT
-    const [id, secret] = adminKey.split(':');
-    if (!id || !secret) {
-      throw new Error('Invalid Ghost Admin API key format');
-    }
-
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT', kid: id })).toString('base64url');
-    const now = Math.floor(Date.now() / 1000);
-    const payload = Buffer.from(JSON.stringify({ iat: now, exp: now + 300, aud: '/admin/' })).toString('base64url');
-    const signature = crypto
-      .createHmac('sha256', Buffer.from(secret, 'hex'))
-      .update(`${header}.${payload}`)
-      .digest('base64url');
-    const token = `${header}.${payload}.${signature}`;
-
-    // Create member via Ghost Admin API
-    const res = await fetch(`${ghostUrl}/ghost/api/admin/members/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Ghost ${token}`,
-      },
-      body: JSON.stringify({ members: [{ email, labels: [{ name: 'Website Signup' }] }] }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      // Ghost returns 422 if member already exists
-      if (res.status === 422) {
-        return NextResponse.json({ success: true, message: 'You\'re already subscribed!' });
-      }
-      console.error('[Subscribe] Ghost API error:', res.status, errData);
-      return NextResponse.json({ error: 'Subscription failed. Please try again.' }, { status: 500 });
-    }
-
-    console.log(`[Subscribe] New member created: ${email}`);
-    return NextResponse.json({ success: true, message: 'Successfully subscribed.' });
-  } catch (error) {
-    console.error('[Subscribe] Error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ success: true, message: 'Subscribed — check your inbox!' });
+  } catch (err) {
+    console.error('[subscribe] error:', err);
+    return NextResponse.json({ error: 'Subscription failed. Please try again.' }, { status: 500 });
   }
 }

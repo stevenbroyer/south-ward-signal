@@ -1,0 +1,19 @@
+name: Weekly Newsletter Digest
+
+# Sends the weekly digest to the Resend audience. No-ops until email is
+# configured (RESEND_API_KEY + RESEND_AUDIENCE_ID on the server).
+on:
+  schedule:
+    - cron: '0 14 * * 1' # Mondays 14:00 UTC (~9-10am ET)
+  workflow_dispatch:
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly digest
+        run: |
+          echo "Triggering weekly digest…"
+          curl -sS -X GET "https://southwardsignal.com/api/cron/weekly-digest" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          echo
