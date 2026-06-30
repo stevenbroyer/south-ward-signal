@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { AdminTable, Column } from '@/components/admin/AdminTable';
 import { AdminBadge } from '@/components/admin/AdminBadge';
@@ -16,44 +17,17 @@ interface MatchRow {
   home_score: number | null;
   away_score: number | null;
   status: string;
+  recap_id: string | null;
 }
 
-const columns: Column<MatchRow>[] = [
-  {
-    key: 'date',
-    header: 'Date',
-    render: (row) => <span className="text-sws-white text-xs font-mono">{formatDate(row.date)}</span>,
-  },
-  {
-    key: 'teams',
-    header: 'Match',
-    render: (row) => (
-      <span className="text-sws-white text-sm">
-        {row.home_team} <span className="text-sws-500">vs</span> {row.away_team}
-      </span>
-    ),
-  },
-  {
-    key: 'score',
-    header: 'Score',
-    render: (row) =>
-      row.home_score !== null ? (
-        <span className="font-mono text-sws-white">
-          {row.home_score}–{row.away_score}
-        </span>
-      ) : (
-        <span className="text-sws-500">—</span>
-      ),
-  },
-  { key: 'status', header: 'Status', render: (row) => <AdminBadge status={row.status} /> },
-];
-
 export default function AdminMatchesPage() {
+  const router = useRouter();
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [draftingId, setDraftingId] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -96,13 +70,96 @@ export default function AdminMatchesPage() {
     }
   }
 
+  async function draftRecap(fixtureId: string) {
+    setDraftingId(fixtureId);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch('/api/admin/articles/draft-recap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fixtureId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || 'Recap drafting failed.');
+        return;
+      }
+      if (data.articleId) {
+        router.push(`/admin/articles/${data.articleId}/edit`);
+        return;
+      }
+      setNotice(data.skipped || 'Done.');
+      await fetchMatches();
+    } catch {
+      setError('Network error while drafting.');
+    } finally {
+      setDraftingId('');
+    }
+  }
+
+  const columns: Column<MatchRow>[] = [
+    {
+      key: 'date',
+      header: 'Date',
+      render: (row) => <span className="text-sws-white text-xs font-mono">{formatDate(row.date)}</span>,
+    },
+    {
+      key: 'teams',
+      header: 'Match',
+      render: (row) => (
+        <span className="text-sws-white text-sm">
+          {row.home_team} <span className="text-sws-500">vs</span> {row.away_team}
+        </span>
+      ),
+    },
+    {
+      key: 'score',
+      header: 'Score',
+      render: (row) =>
+        row.home_score !== null ? (
+          <span className="font-mono text-sws-white">{row.home_score}–{row.away_score}</span>
+        ) : (
+          <span className="text-sws-500">—</span>
+        ),
+    },
+    { key: 'status', header: 'Status', render: (row) => <AdminBadge status={row.status} /> },
+    {
+      key: 'recap',
+      header: 'Recap',
+      className: 'text-right',
+      render: (row) => {
+        if (row.status !== 'finished') return <span className="text-sws-600 text-xs">—</span>;
+        if (row.recap_id) {
+          return (
+            <button
+              onClick={() => router.push(`/admin/articles/${row.recap_id}/edit`)}
+              className="px-2.5 py-1 text-xs font-mono uppercase tracking-wider border border-sws-600/50 rounded text-sws-300 hover:text-sws-white hover:border-sws-400 transition-colors"
+            >
+              View recap
+            </button>
+          );
+        }
+        return (
+          <button
+            onClick={() => draftRecap(row.id)}
+            disabled={draftingId === row.id}
+            className="px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded border border-red/30 text-red hover:bg-red/10 hover:border-red/60 disabled:opacity-50 transition-colors"
+          >
+            {draftingId === row.id ? 'Drafting…' : '✨ Draft recap'}
+          </button>
+        );
+      },
+    },
+  ];
+
   if (loading && matches.length === 0) return <AdminLoadingScreen />;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sws-400 text-sm">
-          NYRB fixtures &amp; results, synced free from ESPN. Auto-refreshes every 3 hours.
+          NYRB fixtures &amp; results, synced free from ESPN. Draft an AI recap for any finished match.
         </p>
         <button
           onClick={syncNow}
@@ -114,9 +171,7 @@ export default function AdminMatchesPage() {
       </div>
 
       {notice && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2.5 text-green-400 text-sm">
-          {notice}
-        </div>
+        <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2.5 text-green-400 text-sm">{notice}</div>
       )}
       {error && (
         <div className="bg-red/10 border border-red/30 rounded-lg px-4 py-2.5 text-red text-sm flex items-center justify-between">

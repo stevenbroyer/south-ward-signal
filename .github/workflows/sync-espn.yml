@@ -28,3 +28,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # After syncing, auto-draft recaps for any newly-finished NYRB matches.
+      # Hits the deployed route so it reuses the server's ANTHROPIC_API_KEY.
+      - name: Draft recaps for finished matches
+        run: |
+          echo "Triggering recap drafting…"
+          curl -sS -X GET "https://southwardsignal.com/api/cron/draft-recaps" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          echo

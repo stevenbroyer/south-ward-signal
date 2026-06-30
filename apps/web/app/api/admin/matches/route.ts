@@ -40,6 +40,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const ids = (data ?? []).map((f) => String(f.id));
+
+  // Which of these fixtures already have a recap? (linked via social_content.sm_fixture_id)
+  const recapByMatch: Record<string, string> = {};
+  if (ids.length) {
+    const { data: recaps } = await db
+      .from('articles')
+      .select('id, social_content')
+      .eq('type', 'match-recap');
+    for (const r of recaps ?? []) {
+      const fid = (r.social_content as { sm_fixture_id?: number | string } | null)?.sm_fixture_id;
+      if (fid != null && ids.includes(String(fid))) recapByMatch[String(fid)] = r.id;
+    }
+  }
+
   const matches = (data ?? []).map((f) => ({
     id: String(f.id),
     date: f.starting_at,
@@ -48,6 +63,7 @@ export async function GET(request: NextRequest) {
     home_score: f.home_score,
     away_score: f.away_score,
     status: f.state === 'FT' ? 'finished' : f.state === 'LIVE' ? 'live' : 'scheduled',
+    recap_id: recapByMatch[String(f.id)] ?? null,
   }));
 
   return NextResponse.json({ matches, total: count ?? 0, page, pageSize });
